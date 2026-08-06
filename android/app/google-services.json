@@ -1,0 +1,54 @@
+{
+  "project_info": {
+    "project_number": "354658451800",
+    "project_id": "expense-flow-deda0",
+    "storage_bucket": "expense-flow-deda0.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:354658451800:android:5a351413597888fe7f652d",
+        "android_client_info": {
+          "package_name": "com.nextgen.expenseflowapp"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "354658451800-h3f3r4t7t9m5t97nv462frte6jv2j4qv.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.nextgen.expenseflowapp",
+            "certificate_hash": "54c7a8f8d2d5ea570d8a14934eae0a85aac4f61d"
+          }
+        },
+        {
+          "client_id": "354658451800-a9fgndl4qnj093i3gjgf5p2mgmlqig2o.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyBUyLfxCp4eKnwdbiXQY0Fdcb5YhrHH7eU"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "354658451800-a9fgndl4qnj093i3gjgf5p2mgmlqig2o.apps.googleusercontent.com",
+              "client_type": 3
+            },
+            {
+              "client_id": "354658451800-cb8v33fo3vrvdkvjcc146sestro8u0dp.apps.googleusercontent.com",
+              "client_type": 2,
+              "ios_info": {
+                "bundle_id": "com.nextgen.expenseflow"
+              }
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

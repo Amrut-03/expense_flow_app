@@ -1,0 +1,25 @@
+{
+  "firestore": {
+    "rules": "firestore.rules"
+  },
+  "flutter": {
+    "platforms": {
+      "android": {
+        "default": {
+          "projectId": "expense-flow-deda0",
+          "appId": "1:354658451800:android:5a351413597888fe7f652d",
+          "fileOutput": "android/app/google-services.json"
+        }
+      },
+      "dart": {
+        "lib/firebase_options.dart": {
+          "projectId": "expense-flow-deda0",
+          "configurations": {
+            "android": "1:354658451800:android:5a351413597888fe7f652d",
+            "ios": "1:354658451800:ios:c6a012d6ccdb27947f652d"
+          }
+        }
+      }
+    }
+  }
+}

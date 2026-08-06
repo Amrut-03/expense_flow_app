@@ -1,0 +1,33 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // Expense documents carry an `uid` field; scope to the owner.
+    match /transactions/{txnId} {
+      allow read: if request.auth != null && request.auth.uid == resource.data.uid;
+      allow create: if request.auth != null && request.auth.uid == request.resource.data.uid;
+      allow update, delete: if request.auth != null && request.auth.uid == resource.data.uid;
+    }
+
+    // Budget documents carry an `uid` field; scope to the owner.
+    match /budgets/{categoryId} {
+      allow read: if request.auth != null && request.auth.uid == resource.data.uid;
+      allow create: if request.auth != null && request.auth.uid == request.resource.data.uid;
+      allow update, delete: if request.auth != null && request.auth.uid == resource.data.uid;
+    }
+
+    // User settings are keyed by uid.
+    match /settings/{uid} {
+      allow read, write: if request.auth != null && request.auth.uid == uid;
+    }
+
+    // FCM device-token registry for push notifications.
+    match /users/{uid}/devices/{token} {
+      allow read, write: if request.auth != null && request.auth.uid == uid;
+    }
+
+    // Written only by Cloud Functions (admin SDK bypasses these rules).
+    match /users/{uid}/budget_alerts/{alertId} {
+      allow read: if request.auth != null && request.auth.uid == uid;
+    }
+  }
+}
