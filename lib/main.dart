@@ -11,11 +11,13 @@ import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:hive_flutter/hive_flutter.dart';
 import 'dart:async';
 import 'core/di/injection_container.dart';
 import 'core/theme/theme_cubit.dart';
+import 'firebase_options.dart';
 import 'features/ai/data/models/embedding_chunk_model.dart';
 import 'features/currency/presentation/cubit/currency_cubit.dart';
 import 'features/expense/data/models/expense_model.dart';
@@ -34,7 +36,10 @@ void main() {
 
       _installGlobalErrorHandlers();
 
-      await Firebase.initializeApp();
+      await dotenv.load(fileName: ".env");
+      await Firebase.initializeApp(
+        options: DefaultFirebaseOptions.currentPlatform,
+      );
 
       await Hive.initFlutter();
 
