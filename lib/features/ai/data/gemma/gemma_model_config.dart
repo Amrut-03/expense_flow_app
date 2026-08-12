@@ -16,8 +16,9 @@ class GemmaModelConfig {
 
   /// HuggingFace token for [defaultModelUrl] when it points to a gated model.
   ///
-  /// Only needed for gated repos (for example Gemma). Leave `null` for public
-  /// models such as Qwen, DeepSeek, or Phi-4. Never commit a real token.
+  /// Only needed for gated repos. The default on-device model
+  /// (`functiongemma-270M-it.task`) is public, so this is `null`. Never
+  /// commit a real token.
   final String? huggingFaceToken;
 
   const GemmaModelConfig({

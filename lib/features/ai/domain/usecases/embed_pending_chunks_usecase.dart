@@ -1,3 +1,5 @@
+import 'package:flutter/foundation.dart';
+
 import '../entities/embedding_progress.dart';
 import '../repositories/embedding_chunk_repository.dart';
 import '../repositories/embedding_repository.dart';
@@ -38,6 +40,10 @@ class EmbedPendingChunksUseCase {
     final pending = await chunkRepository.getChunksNeedingEmbedding();
     final total = pending.length;
 
+    if (kDebugMode) {
+      debugPrint('[EmbedChunks] run started; $total chunk(s) need embedding.');
+    }
+
     var processed = 0;
     var succeeded = 0;
     var failed = 0;
@@ -60,13 +66,27 @@ class EmbedPendingChunksUseCase {
 
         await chunkRepository.saveEmbedding(chunk.id, embedding);
         succeeded++;
-      } catch (_) {
+      } catch (error, stackTrace) {
         failed++;
         failedChunkIds.add(chunk.id);
+        if (kDebugMode) {
+          debugPrint(
+            '[EmbedChunks] failed to embed id=${chunk.id} '
+            '"${chunk.text}": $error',
+          );
+          debugPrint('$stackTrace');
+        }
       }
 
       processed++;
       onProgress?.call(build());
+    }
+
+    if (kDebugMode) {
+      debugPrint(
+        '[EmbedChunks] run finished: $succeeded succeeded, $failed failed '
+        'of $total.',
+      );
     }
 
     final completed = build(isCompleted: true);

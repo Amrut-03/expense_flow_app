@@ -80,6 +80,8 @@
   "dashboard_categories": "Categories",
   "dashboard_recent": "Recent",
   "dashboard_noTransactionsToday": "No transactions today",
+  "dashboard_spendingBreakdown": "Spending breakdown",
+  "dashboard_monthlyTrend": "Monthly trend",
 
   "addExpense_title": "Add Expense",
   "addExpense_validAmount": "Please enter a valid amount",
@@ -126,6 +128,12 @@
   "budget_periodNoLimit": "No limit",
   "budget_percentUsed": "{percent}% used",
   "@budget_percentUsed": {"description": "Shows percentage of budget used", "placeholders": {"percent": {"type": "String"}}},
+  "budget_spendingBreakdown": "Spending breakdown",
+  "budget_others": "Others",
+  "budget_spentAmount": "{amount} spent",
+  "@budget_spentAmount": {"description": "How much was spent in a period, e.g. ₹1,200 spent", "placeholders": {"amount": {"type": "String"}}},
+  "budget_ofAmount": "of {amount}",
+  "@budget_ofAmount": {"description": "Shown before a budget limit, e.g. of ₹5,000", "placeholders": {"amount": {"type": "String"}}},
 
   "notifications_title": "Notifications",
   "notifications_allCaughtUp": "All caught up",

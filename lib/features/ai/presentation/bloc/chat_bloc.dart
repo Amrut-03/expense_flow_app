@@ -1,17 +1,56 @@
+import 'dart:async';
+
 import 'package:expense_flow_app/features/ai/domain/entities/chat_turn.dart';
 import 'package:expense_flow_app/features/ai/domain/usecases/ask_question_usecase.dart';
+import 'package:expense_flow_app/features/ai/domain/usecases/embed_pending_chunks_usecase.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'chat_event.dart';
 import 'chat_state.dart';
 import '../utils/ai_error_message.dart';
 
 class ChatBloc extends Bloc<ChatEvent, ChatState> {
-  ChatBloc({required this.askQuestion}) : super(const ChatInitial()) {
+  ChatBloc({
+    required this.askQuestion,
+    EmbedPendingChunksUseCase? embedPendingChunks,
+  }) : super(const ChatInitial()) {
+    _embedPendingChunks = embedPendingChunks;
+    _warmUpEmbeddingIndex();
     on<SendQuestion>(_onSend);
     on<RetryQuestion>(_onRetry);
   }
 
   final AskQuestionUseCase askQuestion;
+  EmbedPendingChunksUseCase? _embedPendingChunks;
+
+  bool _warmUpStarted = false;
+
+  /// Kicks off a background pass that embeds any chunks that still lack
+  /// vectors. Fire-and-forget: the first answer may rely on lexical
+  /// retrieval, but once the pass completes later questions use the full
+  /// semantic index. Failures never surface to the user.
+  ///
+  /// If the pass throws before finishing (for example the MiniLM model
+  /// could not be initialised on the first attempt), [_warmUpStarted] is
+  /// reset so a later question triggers a retry instead of leaving the chat
+  /// permanently on the lexical fallback.
+  void _warmUpEmbeddingIndex() {
+    final embedPendingChunks = _embedPendingChunks;
+    if (embedPendingChunks == null || _warmUpStarted) return;
+    _warmUpStarted = true;
+
+    unawaited(() async {
+      try {
+        await embedPendingChunks();
+      } catch (error, stackTrace) {
+        _warmUpStarted = false;
+        if (kDebugMode) {
+          debugPrint('[ChatBloc] embedding warm-up failed: $error');
+          debugPrint('$stackTrace');
+        }
+      }
+    }());
+  }
 
   final List<ChatMessage> _conversation = [];
 
@@ -73,6 +112,13 @@ class ChatBloc extends Bloc<ChatEvent, ChatState> {
 
       final answer = ChatBloc.cleanAnswer(tokens.join());
       if (answer.isEmpty) {
+        if (kDebugMode) {
+          debugPrint(
+            '[ChatBloc] model emitted no tokens for "$question"; '
+            'the "couldn\'t find anything" message is shown for an empty '
+            'model response, not a retrieval miss.',
+          );
+        }
         _conversation.add(
           const ChatMessage(
             text:

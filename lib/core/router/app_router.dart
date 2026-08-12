@@ -1,7 +1,6 @@
 import 'package:expense_flow_app/features/auth/presentation/screens/forgot_password_screen.dart';
 import 'package:expense_flow_app/features/auth/presentation/screens/sign_in_screen.dart';
 import 'package:expense_flow_app/features/auth/presentation/screens/signup_screen.dart';
-import 'package:expense_flow_app/features/ai/presentation/screens/ai_disclaimer_screen.dart';
 import 'package:expense_flow_app/features/ai/presentation/screens/chat_screen.dart';
 import 'package:expense_flow_app/features/ai/presentation/bloc/chat_bloc.dart';
 import 'package:expense_flow_app/features/categories/presentation/screens/category_transaction_screen.dart';
@@ -42,11 +41,6 @@ class AppRouter {
         path: '/onboarding',
         pageBuilder: (context, state) =>
             AppRouter._page(const OnboardingScreen()),
-      ),
-      GoRoute(
-        path: '/ai-disclaimer',
-        pageBuilder: (context, state) =>
-            AppRouter._page(const AiDisclaimerScreen()),
       ),
       GoRoute(
         path: '/login',

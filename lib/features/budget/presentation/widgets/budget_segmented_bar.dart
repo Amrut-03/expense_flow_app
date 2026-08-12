@@ -52,7 +52,7 @@ class BudgetSegmentedBar extends StatelessWidget {
         ),
       if (othersSpent > 0)
         _BudgetSegment(
-          label: 'Others',
+          label: l10n.budget_others,
           amount: othersSpent,
           color: palette.textDark.withValues(alpha: .25),
         ),
@@ -69,7 +69,7 @@ class BudgetSegmentedBar extends StatelessWidget {
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
               Text(
-                'Spending breakdown',
+                l10n.budget_spendingBreakdown,
                 style: AppTextStyles.manrope(
                   fontSize: 14.sp,
                   fontWeight: FontWeight.w600,
@@ -77,7 +77,9 @@ class BudgetSegmentedBar extends StatelessWidget {
                 ),
               ),
               Text(
-                '$currencySymbol${convert(totalSpent).toStringAsFixed(0)} spent',
+                l10n.budget_spentAmount(
+                  '$currencySymbol${convert(totalSpent).toStringAsFixed(0)}',
+                ),
                 style: AppTextStyles.manrope(
                   fontSize: 12.sp,
                   color: palette.textDark.withValues(alpha: .5),

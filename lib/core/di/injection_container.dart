@@ -23,6 +23,7 @@ import 'package:expense_flow_app/features/budget/domain/usecases/push_budget_cha
 import 'package:expense_flow_app/features/budget/domain/usecases/set_budget_limits_usecase.dart';
 import 'package:expense_flow_app/features/budget/domain/usecases/watch_remote_budgets_usecase.dart';
 import 'package:expense_flow_app/features/budget/presentation/bloc/budget_limits_bloc.dart';
+import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:get_it/get_it.dart';
 import 'package:google_sign_in/google_sign_in.dart';
 import 'package:dio/dio.dart';
@@ -70,7 +71,7 @@ import '../../features/ai/data/datasources/local/embedding_model_datasource.dart
 import '../../features/ai/data/datasources/local/embedding_model_datasource_impl.dart';
 import '../../features/ai/data/models/minilm/minilm_word_piece_tokenizer.dart';
 import '../../features/ai/data/models/minilm/tflite_minilm_embedding_model.dart';
-import '../../features/ai/data/repositories/embedding_repository_mock.dart';
+import '../../features/ai/data/repositories/embedding_repository_impl.dart';
 import '../../features/ai/domain/repositories/embedding_repository.dart';
 import '../../features/ai/domain/services/embedding/embedding_model.dart';
 import '../../features/ai/domain/services/embedding/embedding_service.dart';
@@ -82,6 +83,7 @@ import '../../features/ai/domain/services/retrieval/top_k_retriever.dart';
 import '../../features/ai/domain/services/retrieval/retrieval_service.dart';
 import '../../features/ai/domain/services/retrieval/lexical_retrieval_service.dart';
 import '../../features/ai/domain/services/retrieval/vector_retrieval_service.dart';
+import '../../features/ai/domain/services/retrieval/fallback_retrieval_service.dart';
 import '../../features/ai/presentation/bloc/chat_bloc.dart';
 import '../../features/ai/domain/services/gemma/gemma_manager.dart';
 import '../../features/ai/data/gemma/gemma_manager_impl.dart';
@@ -90,16 +92,15 @@ import 'package:flutter_gemma/flutter_gemma.dart' show ModelType;
 import '../../features/ai/domain/services/chat/chat_prompt_builder.dart';
 import '../../features/ai/domain/services/chat/rag_chat_prompt_builder.dart';
 import '../../features/ai/domain/usecases/ask_question_usecase.dart';
-import '../../features/ai/data/repositories/ai_disclaimer_repository_impl.dart';
-import '../../features/ai/domain/repositories/ai_disclaimer_repository.dart';
-import '../../features/ai/domain/usecases/should_show_disclaimer_usecase.dart';
-import '../../features/ai/domain/usecases/acknowledge_disclaimer_usecase.dart';
 import '../../features/ai/domain/services/safety/ai_safety_policy.dart';
 import '../../features/ai/domain/services/safety/rule_based_ai_safety_policy.dart';
 import '../../features/expense/domain/usecases/regenerate_ai_chunks_usecase.dart';
 import '../../features/expense/domain/usecases/summary_refresh/budget_summary_refresher.dart';
+import '../../features/expense/domain/usecases/summary_refresh/category_summary_refresher.dart';
 import '../../features/expense/domain/usecases/summary_refresh/monthly_summary_refresher.dart';
 import '../../features/expense/domain/usecases/summary_refresh/refresh_summaries_usecase.dart';
+import '../../features/expense/domain/usecases/summary_refresh/transaction_summary_refresher.dart';
+import '../../features/expense/domain/usecases/summary_refresh/weekly_summary_refresher.dart';
 import '../../core/background/background_summary_refresh_service.dart';
 import '../../core/theme/theme_cubit.dart';
 import '../../features/settings/presentation/cubit/locale_cubit.dart';
@@ -153,8 +154,7 @@ Future<void> initDependencyInjection() async {
 
   final googleSignIn = GoogleSignIn.instance;
 
-  const serverClientId =
-      '354658451800-a9fgndl4qnj093i3gjgf5p2mgmlqig2o.apps.googleusercontent.com';
+  final serverClientId = dotenv.env['GOOGLE_SERVER_CLIENT_ID'] ?? '';
 
   if (serverClientId.isNotEmpty) {
     await googleSignIn.initialize(serverClientId: serverClientId);
@@ -193,7 +193,19 @@ Future<void> initDependencyInjection() async {
   sl.registerLazySingleton(() => Connectivity());
   sl.registerLazySingleton<NetworkInfo>(() => NetworkInfoImpl(sl()));
   sl.registerLazySingleton(() => Dio());
-  sl.registerLazySingleton(() => DioClient(sl()));
+  sl.registerLazySingleton(() => DioClient(
+    sl(),
+    baseUrl: dotenv.env['API_BASE_URL'] ?? '',
+    authTokenProvider: () async {
+      final user = sl<fb.FirebaseAuth>().currentUser;
+      if (user == null) return null;
+      try {
+        return await user.getIdToken();
+      } catch (_) {
+        return null;
+      }
+    },
+  ));
 
   // Expense DIs
   sl.registerLazySingleton<ExpenseLocalDataSource>(
@@ -222,6 +234,7 @@ Future<void> initDependencyInjection() async {
       pushPendingChangesUseCase: sl<PushPendingChangesUseCase>(),
       pullRemoteChangesUseCase: sl<PullRemoteChangesUseCase>(),
       watchRemoteExpensesUseCase: sl<WatchRemoteExpensesUseCase>(),
+      embedPendingChunksUseCase: sl<EmbedPendingChunksUseCase>(),
     ),
   );
 
@@ -277,15 +290,43 @@ Future<void> initDependencyInjection() async {
   );
 
   sl.registerLazySingleton(
+    () => TransactionSummaryRefresher(
+      expenseRepository: sl<ExpenseRepository>(),
+      generator: sl<TransactionChunkGenerator>(),
+    ),
+  );
+
+  sl.registerLazySingleton(
+    () => WeeklySummaryRefresher(
+      expenseRepository: sl<ExpenseRepository>(),
+      generator: sl<WeeklySummaryChunkGenerator>(),
+    ),
+  );
+
+  sl.registerLazySingleton(
+    () => CategorySummaryRefresher(
+      expenseRepository: sl<ExpenseRepository>(),
+      generator: sl<CategorySummaryChunkGenerator>(),
+    ),
+  );
+
+  sl.registerLazySingleton(
     () => RefreshSummariesUseCase(
       chunkRepository: sl<EmbeddingChunkRepository>(),
-      refreshers: [sl<MonthlySummaryRefresher>(), sl<BudgetSummaryRefresher>()],
+      refreshers: [
+        sl<MonthlySummaryRefresher>(),
+        sl<BudgetSummaryRefresher>(),
+        sl<TransactionSummaryRefresher>(),
+        sl<WeeklySummaryRefresher>(),
+        sl<CategorySummaryRefresher>(),
+      ],
     ),
   );
 
   sl.registerLazySingleton(
     () => BackgroundSummaryRefreshService(
       refreshSummariesUseCase: sl<RefreshSummariesUseCase>(),
+      embedPendingChunks: sl<EmbedPendingChunksUseCase>(),
     ),
   );
 
@@ -459,7 +500,10 @@ Future<void> initDependencyInjection() async {
   );
 
   sl.registerLazySingleton<EmbeddingRepository>(
-    () => EmbeddingRepositoryMock(),
+    () => EmbeddingRepositoryImpl(
+      tokenizer: sl<EmbeddingTokenizer>(),
+      model: sl<EmbeddingModel>(),
+    ),
   );
 
   sl.registerLazySingleton<EmbeddingService>(
@@ -485,20 +529,28 @@ Future<void> initDependencyInjection() async {
     () => TopKRetriever(chunkRepository: sl<EmbeddingChunkRepository>()),
   );
 
-  // TODO(embedding): restore VectorRetrievalService as the primary retrieval
-  // strategy once the MiniLM forward pass and its model asset are wired up.
-  // Only this registration changes; the rest of the pipeline is unchanged.
-  sl.registerLazySingleton<RetrievalService>(
-    () => LexicalRetrievalService(
-      chunkRepository: sl<EmbeddingChunkRepository>(),
-    ),
-  );
-
+  // Retrieval is primary semantic (vector) with a lexical fallback: the
+  // MiniLM model asset may not be bundled yet, and the fallback keeps the
+  // chat pipeline functional (and the embedding failure invisible) until it
+  // is. Once the model is bundled this wiring needs no change.
   sl.registerLazySingleton<VectorRetrievalService>(
     () => VectorRetrievalService(
       embeddingRepository: sl<EmbeddingRepository>(),
       topKRetriever: sl<TopKRetriever>(),
       chunkRepository: sl<EmbeddingChunkRepository>(),
+    ),
+  );
+
+  sl.registerLazySingleton(
+    () => LexicalRetrievalService(
+      chunkRepository: sl<EmbeddingChunkRepository>(),
+    ),
+  );
+
+  sl.registerLazySingleton<RetrievalService>(
+    () => FallbackRetrievalService(
+      primary: sl<VectorRetrievalService>(),
+      fallback: sl<LexicalRetrievalService>(),
     ),
   );
 
@@ -518,20 +570,6 @@ Future<void> initDependencyInjection() async {
 
   sl.registerLazySingleton<AiSafetyPolicy>(() => RuleBasedAiSafetyPolicy());
 
-  sl.registerLazySingleton<AiDisclaimerRepository>(
-    () =>
-        AiDisclaimerRepositoryImpl(box: Hive.box<dynamic>('ai_disclaimer_box')),
-  );
-
-  sl.registerLazySingleton(
-    () => ShouldShowDisclaimerUseCase(repository: sl<AiDisclaimerRepository>()),
-  );
-
-  sl.registerLazySingleton(
-    () =>
-        AcknowledgeDisclaimerUseCase(repository: sl<AiDisclaimerRepository>()),
-  );
-
   sl.registerLazySingleton(
     () => AskQuestionUseCase(
       retrievalService: sl<RetrievalService>(),
@@ -544,7 +582,10 @@ Future<void> initDependencyInjection() async {
   // Lazy singleton: the conversation survives navigation away from and back
   // to the chat screen, but is rebuilt fresh on app restart.
   sl.registerLazySingleton(
-    () => ChatBloc(askQuestion: sl<AskQuestionUseCase>()),
+    () => ChatBloc(
+      askQuestion: sl<AskQuestionUseCase>(),
+      embedPendingChunks: sl<EmbedPendingChunksUseCase>(),
+    ),
   );
 
   // Notifications DIs

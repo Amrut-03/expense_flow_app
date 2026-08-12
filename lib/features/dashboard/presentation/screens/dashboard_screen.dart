@@ -28,6 +28,8 @@ import '../../../notifications/presentation/bloc/notifications_cubit.dart';
 import '../../../notifications/presentation/bloc/notifications_state.dart';
 import '../widgets/categories_tile.dart';
 import '../widgets/transaction_history.dart';
+import '../widgets/monthly_total_chart.dart';
+import '../widgets/spending_pie_chart.dart';
 import '../../domain/usecases/compute_dashboard_summary_usecase.dart';
 
 class DashboardScreen extends StatefulWidget {
@@ -125,6 +127,38 @@ class _DashboardScreenState extends State<DashboardScreen> {
         final totalSpent = summary.totalSpent;
         final sortedCategories = summary.sortedCategories;
         final vsLastMonthLabel = summary.vsLastMonthLabel;
+
+        final amountsByCategory = <String, double>{};
+        for (final expense in expenses) {
+          amountsByCategory[expense.categoryId] =
+              (amountsByCategory[expense.categoryId] ?? 0) + expense.amount;
+        }
+        final slices = [
+          for (final category in ExpenseCategories.all)
+            CategorySpending(
+              category: category,
+              amount: amountsByCategory[category.id] ?? 0,
+            ),
+        ];
+
+        final now = DateTime.now();
+        final monthlyData = <MonthlyTotal>[
+          for (int i = 5; i >= 0; i--)
+            () {
+              final month = DateTime(now.year, now.month - i, 1);
+              final monthTotal = expenses
+                  .where(
+                    (e) =>
+                        e.date.year == month.year &&
+                        e.date.month == month.month,
+                  )
+                  .fold<double>(0, (sum, e) => sum + e.amount);
+              return MonthlyTotal(
+                label: DateFormat('MMM').format(month),
+                amount: monthTotal,
+              );
+            }(),
+        ];
 
         if (_displayedTotal == 0 && totalSpent > 0) {
           WidgetsBinding.instance.addPostFrameCallback((_) {
@@ -283,6 +317,56 @@ class _DashboardScreenState extends State<DashboardScreen> {
                             )
                             .animate()
                             .fadeIn(duration: 320.ms, curve: Curves.easeOut)
+                            .slideY(
+                              begin: 0.06,
+                              end: 0,
+                              curve: Curves.easeOutCubic,
+                            ),
+                        SizedBox(height: 24.h),
+                        Text(
+                          l10n.dashboard_spendingBreakdown,
+                          style: AppTextStyles.manrope(
+                            fontSize: 14.sp,
+                            color: palette.textDark,
+                            fontWeight: FontWeight.w600,
+                          ),
+                        )
+                            .animate(delay: 100.ms)
+                            .fadeIn(duration: 240.ms, curve: Curves.easeOut),
+                        SizedBox(height: 12.h),
+                        Container(
+                          width: double.infinity,
+                          padding: EdgeInsets.all(20.h),
+                          decoration: NeuBox.raised(palette, radius: 16.r),
+                          child: SpendingPieChart(slices: slices),
+                        )
+                            .animate(delay: 140.ms)
+                            .fadeIn(duration: 280.ms, curve: Curves.easeOut)
+                            .slideY(
+                              begin: 0.06,
+                              end: 0,
+                              curve: Curves.easeOutCubic,
+                            ),
+                        SizedBox(height: 24.h),
+                        Text(
+                          l10n.dashboard_monthlyTrend,
+                          style: AppTextStyles.manrope(
+                            fontSize: 14.sp,
+                            color: palette.textDark,
+                            fontWeight: FontWeight.w600,
+                          ),
+                        )
+                            .animate(delay: 180.ms)
+                            .fadeIn(duration: 240.ms, curve: Curves.easeOut),
+                        SizedBox(height: 12.h),
+                        Container(
+                          width: double.infinity,
+                          padding: EdgeInsets.fromLTRB(12.w, 20.h, 12.w, 8.h),
+                          decoration: NeuBox.raised(palette, radius: 16.r),
+                          child: MonthlyTotalChart(data: monthlyData),
+                        )
+                            .animate(delay: 220.ms)
+                            .fadeIn(duration: 280.ms, curve: Curves.easeOut)
                             .slideY(
                               begin: 0.06,
                               end: 0,

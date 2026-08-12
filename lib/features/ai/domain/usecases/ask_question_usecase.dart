@@ -1,3 +1,5 @@
+import 'package:flutter/foundation.dart';
+
 import '../services/chat/chat_prompt_builder.dart';
 import '../services/gemma/gemma_manager.dart';
 import '../services/retrieval/retrieval_service.dart';
@@ -57,12 +59,27 @@ class AskQuestionUseCase {
       topK: topK,
       minScore: minScore,
     );
+    if (kDebugMode) {
+      debugPrint(
+        '[AskQuestion] retrieved ${chunks.length} chunk(s) for "$question":',
+      );
+      for (final result in chunks) {
+        debugPrint(
+          '  id=${result.chunk.id} [${result.chunk.chunkType}] '
+          '(sim ${result.similarity.toStringAsFixed(3)}) '
+          '${result.chunk.text}',
+        );
+      }
+    }
     final prompt = promptBuilder.build(
       question: question,
       chunks: chunks,
       history: history,
     );
-    final tokens = await gemmaManager.generateResponse(prompt);
+    final tokens = await gemmaManager.generateResponse(
+      prompt,
+      systemInstruction: promptBuilder.systemInstruction,
+    );
 
     await for (final token in tokens) {
       yield token;

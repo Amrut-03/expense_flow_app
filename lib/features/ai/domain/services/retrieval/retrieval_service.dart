@@ -5,14 +5,14 @@ import '../../entities/retrieved_chunk.dart';
 /// Implementations turn a natural-language query into the most relevant
 /// persisted chunks, ranked by descending relevance and capped at [topK].
 ///
-/// Two implementations exist:
-///  * [LexicalRetrievalService] — the temporary production scaffold that
-///    ranks by keyword/recency matching over chunk text. Active today.
+/// Implementations:
+///  * [FallbackRetrievalService] — the production wiring. Prefers semantic,
+///    embedding-based ranking ([VectorRetrievalService]) and automatically
+///    degrades to [LexicalRetrievalService] when the on-device embedding
+///    model is not available.
 ///  * [VectorRetrievalService] — the semantic, embedding-based retriever.
-///    TODO(embedding): make this the primary retrieval strategy once the
-///    MiniLM forward pass and model asset are wired up. Swapping only
-///    requires changing the DI registration to return this type instead of
-///    the lexical one (see `injection_container.dart`).
+///  * [LexicalRetrievalService] — keyword/recency ranking that does not
+///    require a working embedding model.
 abstract interface class RetrievalService {
   /// Default number of results returned by [AskQuestionUseCase].
   static const int defaultTopK = 8;

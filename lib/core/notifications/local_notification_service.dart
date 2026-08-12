@@ -36,7 +36,7 @@ class LocalNotificationService {
     await _initTimeZone();
 
     const settings = InitializationSettings(
-      android: AndroidInitializationSettings('@mipmap/ic_launcher'),
+      android: AndroidInitializationSettings('@drawable/ic_notification'),
       iOS: DarwinInitializationSettings(
         requestAlertPermission: false,
         requestBadgePermission: false,
@@ -216,6 +216,7 @@ class LocalNotificationService {
         channelId,
         _channelName(channelId),
         channelDescription: _channelName(channelId),
+        icon: 'ic_notification',
         importance: importance,
         priority: priority,
       ),

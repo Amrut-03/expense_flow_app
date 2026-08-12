@@ -46,3 +46,9 @@ app.*.map.json
 
 # Environment variables
 .env
+
+# Play Store signing secrets (never commit)
+android/key.properties
+android/upload-keystore.jks
+*.keystore
+*.jks

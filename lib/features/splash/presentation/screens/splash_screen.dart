@@ -1,6 +1,5 @@
 import 'dart:math' as math;
 
-import 'package:expense_flow_app/core/di/injection_container.dart';
 import 'package:expense_flow_app/core/theme/app_text_styles.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_animate/flutter_animate.dart';
@@ -10,7 +9,6 @@ import 'package:hive/hive.dart';
 
 import '../../../../core/theme/neumorphic_styles.dart';
 import '../../../../core/theme/theme_cubit.dart';
-import '../../../ai/domain/usecases/should_show_disclaimer_usecase.dart';
 import '../../../auth/presentation/bloc/auth_bloc.dart';
 import '../../../auth/presentation/bloc/auth_event.dart';
 import '../../../auth/presentation/bloc/auth_state.dart';
@@ -29,6 +27,7 @@ class _SplashScreenState extends State<SplashScreen> {
   @override
   void initState() {
     super.initState();
+    debugPrint('[Splash] initState: first screen mounted, UI is alive');
     _navigateNext();
   }
 
@@ -42,14 +41,6 @@ class _SplashScreenState extends State<SplashScreen> {
 
     if (!mounted) return;
 
-    final shouldShowDisclaimer = await sl<ShouldShowDisclaimerUseCase>().call();
-    if (!mounted) return;
-
-    if (shouldShowDisclaimer) {
-      context.go('/ai-disclaimer');
-      return;
-    }
-
     if (hasSeenOnboarding) {
       context.read<AuthBloc>().add(CheckAuthStatus());
     } else {
@@ -59,6 +50,7 @@ class _SplashScreenState extends State<SplashScreen> {
 
   @override
   Widget build(BuildContext context) {
+    debugPrint('[Splash] build: first screen painting');
     final palette = context.watch<ThemeCubit>().state.palette;
 
     return BlocListener<AuthBloc, AuthState>(

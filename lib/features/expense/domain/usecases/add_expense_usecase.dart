@@ -1,5 +1,6 @@
 import 'package:uuid/uuid.dart';
 
+import '../../../../core/constants/note_limits.dart';
 import '../entities/expense_entity.dart';
 import '../repositories/expense_repository.dart';
 
@@ -73,12 +74,16 @@ class AddExpenseUseCase {
       throw Exception("Category is required");
     }
 
-    if ((params.note?.length ?? 0) > 280) {
-      throw Exception("Note cannot exceed 280 characters");
+    if ((params.note?.length ?? 0) > NoteLimits.maxLength) {
+      throw Exception(
+        'Note cannot exceed ${NoteLimits.maxLength} characters',
+      );
     }
 
-    if ((params.title?.length ?? 0) > 80) {
-      throw Exception("Title cannot exceed 80 characters");
+    if ((params.title?.length ?? 0) > NoteLimits.titleMaxLength) {
+      throw Exception(
+        'Title cannot exceed ${NoteLimits.titleMaxLength} characters',
+      );
     }
 
     final oldestAllowed = DateTime.now().subtract(

@@ -79,6 +79,8 @@
   "dashboard_categories": "श्रेणियां",
   "dashboard_recent": "हाल ही के",
   "dashboard_noTransactionsToday": "आज कोई लेनदेन नहीं",
+  "dashboard_spendingBreakdown": "खर्च का विवरण",
+  "dashboard_monthlyTrend": "मासिक रुझान",
 
   "addExpense_title": "खर्च जोड़ें",
   "addExpense_validAmount": "कृपया मान्य राशि दर्ज करें",
@@ -124,6 +126,12 @@
   "budget_periodYearly": "वार्षिक",
   "budget_periodNoLimit": "कोई सीमा नहीं",
   "budget_percentUsed": "{percent}% उपयोग किया गया",
+  "budget_spendingBreakdown": "खर्च का विवरण",
+  "budget_others": "अन्य",
+  "budget_spentAmount": "{amount} खर्च किया",
+  "@budget_spentAmount": {"description": "How much was spent in a period", "placeholders": {"amount": {"type": "String"}}},
+  "budget_ofAmount": "{amount} में से",
+  "@budget_ofAmount": {"description": "Shown before a budget limit", "placeholders": {"amount": {"type": "String"}}},
 
   "notifications_title": "सूचनाएं",
   "notifications_allCaughtUp": "सब पढ़ा हुआ",

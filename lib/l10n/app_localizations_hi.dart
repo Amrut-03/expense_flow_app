@@ -233,6 +233,12 @@ class AppLocalizationsHi extends AppLocalizations {
   String get dashboard_noTransactionsToday => 'आज कोई लेनदेन नहीं';
 
   @override
+  String get dashboard_spendingBreakdown => 'खर्च का विवरण';
+
+  @override
+  String get dashboard_monthlyTrend => 'मासिक रुझान';
+
+  @override
   String get addExpense_title => 'खर्च जोड़ें';
 
   @override
@@ -358,6 +364,22 @@ class AppLocalizationsHi extends AppLocalizations {
   @override
   String budget_percentUsed(String percent) {
     return '$percent% उपयोग किया गया';
+  }
+
+  @override
+  String get budget_spendingBreakdown => 'खर्च का विवरण';
+
+  @override
+  String get budget_others => 'अन्य';
+
+  @override
+  String budget_spentAmount(String amount) {
+    return '$amount खर्च किया';
+  }
+
+  @override
+  String budget_ofAmount(String amount) {
+    return '$amount में से';
   }
 
   @override

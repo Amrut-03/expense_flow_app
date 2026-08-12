@@ -532,6 +532,18 @@ abstract class AppLocalizations {
   /// **'No transactions today'**
   String get dashboard_noTransactionsToday;
 
+  /// No description provided for @dashboard_spendingBreakdown.
+  ///
+  /// In en, this message translates to:
+  /// **'Spending breakdown'**
+  String get dashboard_spendingBreakdown;
+
+  /// No description provided for @dashboard_monthlyTrend.
+  ///
+  /// In en, this message translates to:
+  /// **'Monthly trend'**
+  String get dashboard_monthlyTrend;
+
   /// No description provided for @addExpense_title.
   ///
   /// In en, this message translates to:
@@ -777,6 +789,30 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'{percent}% used'**
   String budget_percentUsed(String percent);
+
+  /// No description provided for @budget_spendingBreakdown.
+  ///
+  /// In en, this message translates to:
+  /// **'Spending breakdown'**
+  String get budget_spendingBreakdown;
+
+  /// No description provided for @budget_others.
+  ///
+  /// In en, this message translates to:
+  /// **'Others'**
+  String get budget_others;
+
+  /// How much was spent in a period, e.g. ₹1,200 spent
+  ///
+  /// In en, this message translates to:
+  /// **'{amount} spent'**
+  String budget_spentAmount(String amount);
+
+  /// Shown before a budget limit, e.g. of ₹5,000
+  ///
+  /// In en, this message translates to:
+  /// **'of {amount}'**
+  String budget_ofAmount(String amount);
 
   /// No description provided for @notifications_title.
   ///

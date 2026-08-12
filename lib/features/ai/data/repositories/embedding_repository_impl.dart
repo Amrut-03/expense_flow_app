@@ -5,9 +5,7 @@ import 'package:expense_flow_app/features/ai/domain/services/embedding/embedding
 /// Default implementation of [EmbeddingRepository].
 ///
 /// Composes the tokenizer and the model into the full embedding pipeline:
-/// load assets -> tokenize -> run inference -> return the vector. The model
-/// inference step is currently a placeholder that throws
-/// [UnimplementedError].
+/// load assets -> tokenize -> run inference -> return the vector.
 class EmbeddingRepositoryImpl implements EmbeddingRepository {
   EmbeddingRepositoryImpl({required this.tokenizer, required this.model});
 

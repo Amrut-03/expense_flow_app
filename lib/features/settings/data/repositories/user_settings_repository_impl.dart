@@ -48,8 +48,18 @@ class UserSettingsRepositoryImpl implements UserSettingsRepository {
       if (remote == null) {
         return null;
       }
-      await localDataSource.write(remote);
-      return remote;
+      // Merge the remote document over the local settings, keeping any field
+      // the remote does not carry (for example `localeCode` on accounts whose
+      // settings were first written before it was synced) so a pull never
+      // resets the user's language preference to the default.
+      final local = await localDataSource.read();
+      final merged = UserSettings(
+        darkMode: remote['darkMode'] as bool? ?? local.darkMode,
+        currencyCode: remote['currencyCode'] as String? ?? local.currencyCode,
+        localeCode: remote['localeCode'] as String? ?? local.localeCode,
+      );
+      await localDataSource.write(merged);
+      return merged;
     } catch (_) {
       return null;
     }

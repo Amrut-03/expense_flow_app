@@ -1,0 +1,75 @@
+name: Deploy to Play Store
+
+on:
+  workflow_dispatch:
+    inputs:
+      track:
+        description: "Play Console track to upload to"
+        type: choice
+        options:
+          - internal
+          - alpha
+          - beta
+          - production
+        default: internal
+      appbundle:
+        description: "Build an Android App Bundle (AAB). Uncheck to build an APK."
+        type: boolean
+        default: true
+  push:
+    tags:
+      - "v*"
+
+jobs:
+  build-and-upload:
+    name: Build and upload to Google Play
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+
+    env:
+      ANDROID_KEYSTORE: ${{ github.workspace }}/android/upload-keystore.jks
+      ANDROID_KEY_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS }}
+      ANDROID_KEYSTORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
+      ANDROID_KEY_PASSWORD: ${{ secrets.ANDROID_KEY_PASSWORD }}
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Install Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+          cache: true
+
+      - name: Setup Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "21"
+
+      - name: Restore pub packages
+        run: flutter pub get
+
+      - name: Recreate release signing key
+        run: |
+          echo "${{ secrets.ANDROID_KEYSTORE_BASE64 }}" | base64 --decode > android/upload-keystore.jks
+
+      - name: Build release AAB
+        if: inputs.appbundle != 'false' || github.event_name != 'workflow_dispatch'
+        run: flutter build appbundle --release
+
+      - name: Build release APK
+        if: inputs.appbundle == 'false' && github.event_name == 'workflow_dispatch'
+        run: flutter build apk --release
+
+      - name: Upload to Google Play Console
+        uses: r0adkll/upload-google-play@v1
+        with:
+          serviceAccountJsonPlainText: ${{ secrets.PLAY_APP_SERVICE_ACCOUNT_JSON }}
+          packageName: com.nextgen.expenseflowapp
+          releaseFiles: ${{ inputs.appbundle != 'false' && github.workspace + '/build/app/outputs/bundle/release/app-release.aab' || github.workspace + '/build/app/outputs/flutter-apk/app-release.apk' }}
+          track: ${{ inputs.track || 'internal' }}
+          status: completed
+          changesNotSentForReview: true

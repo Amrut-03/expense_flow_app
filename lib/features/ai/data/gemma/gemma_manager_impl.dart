@@ -60,7 +60,10 @@ class GemmaManagerImpl implements GemmaManager {
   }
 
   @override
-  Future<Stream<String>> generateResponse(String prompt) async {
+  Future<Stream<String>> generateResponse(
+    String prompt, {
+    String? systemInstruction,
+  }) async {
     if (!FlutterGemma.hasActiveModel()) {
       final defaultUrl = config.defaultModelUrl;
       if (defaultUrl == null) {
@@ -73,7 +76,10 @@ class GemmaManagerImpl implements GemmaManager {
     }
 
     final model = await _getActiveModel();
-    final chat = await model.createChat();
+    final chat = await model.createChat(
+      systemInstruction: systemInstruction,
+      modelType: config.modelType,
+    );
     await chat.addQueryChunk(Message.text(text: prompt, isUser: true));
 
     return chat

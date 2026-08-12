@@ -1,4 +1,7 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android">
+    <!-- The NEW_BASE policy in proc: this app talks to Firebase, Google
+         Sign-In and the backend, so INTERNET must be present in release. -->
+    <uses-permission android:name="android.permission.INTERNET"/>
     <!-- Local notifications (Android 13+ runtime permission). -->
     <uses-permission android:name="android.permission.POST_NOTIFICATIONS"/>
     <!-- Re-schedule notifications after the device reboots. -->

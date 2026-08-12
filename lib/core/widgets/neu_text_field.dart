@@ -24,6 +24,7 @@ class NeuTextField extends StatelessWidget {
   final VoidCallback? onTap;
   final int maxLines;
   final ValueChanged<String>? onChanged;
+  final int? maxLength;
 
   const NeuTextField({
     super.key,
@@ -43,6 +44,7 @@ class NeuTextField extends StatelessWidget {
     this.readOnly = false,
     this.onTap,
     this.maxLines = 1,
+    this.maxLength,
     this.radius = 16,
   });
 
@@ -74,6 +76,13 @@ class NeuTextField extends StatelessWidget {
         cursorColor: palette.shadowDark,
         cursorHeight: 15.h,
         maxLines: obscureText ? 1 : maxLines,
+        maxLength: maxLength,
+        // The default counter is suppressed; callers render their own
+        // localized counter (e.g. "42/280").
+        buildCounter: maxLength == null
+            ? null
+            : (context, {required int currentLength, required bool isFocused, int? maxLength}) =>
+                  const SizedBox.shrink(),
         style: AppTextStyles.manrope(fontSize: 13.sp, color: palette.textDark),
         decoration: InputDecoration(
           hintText: hint,

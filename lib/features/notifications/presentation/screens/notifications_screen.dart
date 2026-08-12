@@ -43,7 +43,8 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
               padding: EdgeInsets.fromLTRB(16.w, 10.h, 16.w, 4.h),
               child: NeuAppBar(
                 title: 'Notifications',
-                onBack: () => context.pop(),
+                onBack: () =>
+                    context.canPop() ? context.pop() : context.go('/dashboard'),
                 trailing: state is NotificationsLoaded && state.hasUnread
                     ? _MarkAllReadButton(palette: palette)
                     : null,

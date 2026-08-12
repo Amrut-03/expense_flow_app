@@ -1,3 +1,7 @@
+import 'dart:math' as math;
+
+import 'package:flutter/foundation.dart';
+
 import '../../entities/retrieved_chunk.dart';
 import '../../repositories/embedding_chunk_repository.dart';
 import '../../repositories/embedding_repository.dart';
@@ -11,11 +15,10 @@ import 'top_k_retriever.dart';
 /// chunks that share a source entity and chunk type, and returns the top
 /// [topK] results.
 ///
-/// This was the original (and future) retrieval strategy. It is currently
-/// superseded by [LexicalRetrievalService] because the MiniLM embedding
-/// forward pass and its model asset are not wired up yet.
-/// TODO(embedding): make this the primary strategy once embeddings work; the
-/// rest of the pipeline already targets the [RetrievalService] contract.
+/// This is the preferred retrieval strategy. It is wired as the primary of
+/// [FallbackRetrievalService], which routes through the lexical retriever
+/// whenever the embedding backend is unavailable (for example while the
+/// MiniLM model asset is not bundled).
 class VectorRetrievalService implements RetrievalService {
   VectorRetrievalService({
     required this.embeddingRepository,
@@ -51,6 +54,33 @@ class VectorRetrievalService implements RetrievalService {
     final queryEmbedding = await embeddingRepository.generateEmbedding(query);
     final chunks = await chunkRepository.getAllChunks();
 
+    if (kDebugMode) {
+      final embeddedCount =
+          chunks.where((c) => c.embedding.isNotEmpty).length;
+      debugPrint(
+        '[VectorRetrieval] "$query" embedded=$embeddedCount/${chunks.length}',
+      );
+      final byType = <String, int>{};
+      final embeddedByType = <String, int>{};
+      for (final chunk in chunks) {
+        byType[chunk.chunkType] = (byType[chunk.chunkType] ?? 0) + 1;
+        if (chunk.embedding.isNotEmpty) {
+          embeddedByType[chunk.chunkType] =
+              (embeddedByType[chunk.chunkType] ?? 0) + 1;
+        }
+      }
+      final breakdown = byType.keys.map(
+        (type) => '$type=${byType[type]} '
+            '(embedded ${embeddedByType[type] ?? 0})',
+      ).join(', ');
+      debugPrint('[VectorRetrieval] chunks by type: $breakdown');
+      debugPrint(
+        '[VectorRetrieval] queryEmbedding dim=${queryEmbedding.length} '
+        'head=${queryEmbedding.take(6).map((e) => e.toStringAsFixed(4)).join(', ')} '
+        'norm=${_l2Norm(queryEmbedding).toStringAsFixed(4)}',
+      );
+    }
+
     final scored = topKRetriever.scoreAll(
       queryEmbedding,
       chunks,
@@ -65,8 +95,30 @@ class VectorRetrievalService implements RetrievalService {
 
     final deduped = _removeDuplicates(scored);
 
-    if (deduped.length <= topK) return deduped;
-    return deduped.sublist(0, topK);
+    final results =
+        deduped.length <= topK ? deduped : deduped.sublist(0, topK);
+
+    if (kDebugMode) {
+      debugPrint('[VectorRetrieval] top results for "$query":');
+      for (var i = 0; i < results.length; i++) {
+        final r = results[i];
+        debugPrint(
+          '  ${i + 1}. id=${r.chunk.id} '
+          'sim=${r.similarity.toStringAsFixed(4)} '
+          '"${r.chunk.text}"',
+        );
+      }
+    }
+
+    return results;
+  }
+
+  double _l2Norm(List<double> vector) {
+    var normSquared = 0.0;
+    for (final value in vector) {
+      normSquared += value * value;
+    }
+    return math.sqrt(normSquared);
   }
 
   /// Keeps the highest-ranked instance of each chunk, where a chunk is

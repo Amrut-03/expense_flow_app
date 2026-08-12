@@ -10,6 +10,7 @@ import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:go_router/go_router.dart';
 import '../../../../core/constants/expense_category.dart';
+import '../../../../core/constants/note_limits.dart';
 import '../../../../core/constants/payment_methods.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/theme_cubit.dart';
@@ -362,6 +363,7 @@ class _AddExpenseScreenState extends State<AddExpenseScreen> {
                               height: 90.h,
                               controller: _noteController,
                               hint: l10n.addExpense_noteHint,
+                              maxLength: NoteLimits.maxLength,
                             ),
                             SizedBox(height: 6.h),
                             Align(
@@ -370,7 +372,7 @@ class _AddExpenseScreenState extends State<AddExpenseScreen> {
                                 valueListenable: _noteController,
                                 builder: (context, value, _) {
                                   return Text(
-                                    "${value.text.length}/200 *",
+                                    "${value.text.length}/${NoteLimits.maxLength} *",
                                     style: AppTextStyles.manrope(
                                       fontSize: 11.sp,
                                       color: palette.textDark.withValues(

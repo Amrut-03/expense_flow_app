@@ -7,17 +7,30 @@ class CurrencyRepositoryImpl implements CurrencyRepository {
   final ExchangeRateRemoteDataSource remote;
   final ExchangeRateLocalDataSource local;
 
+  /// Rates are refreshed at most once per [cacheTtl]; within that window the
+  /// locally cached copy is served without touching the network.
+  static const Duration cacheTtl = Duration(hours: 24);
+
   CurrencyRepositoryImpl({required this.remote, required this.local});
 
   @override
   Future<ExchangeRateEntity> getExchangeRates() async {
+    final cached = await local.getCachedRates();
+    final fetchedAt = await local.getFetchedAt();
+
+    if (cached != null &&
+        fetchedAt != null &&
+        DateTime.now().difference(fetchedAt) < cacheTtl) {
+      return cached;
+    }
+
     try {
       final rates = await remote.getRates();
       await local.cacheRates(rates);
       return rates;
     } catch (_) {
-      final cached = await local.getCachedRates();
-
+      // The cache is stale or missing and the remote is unreachable: fall
+      // back to whatever we still have locally rather than failing.
       if (cached != null) {
         return cached;
       }

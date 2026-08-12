@@ -7,6 +7,10 @@ abstract class ExchangeRateLocalDataSource {
 
   Future<ExchangeRateModel?> getCachedRates();
 
+  /// Timestamp (epoch millis) of the last successful remote fetch, or `null`
+  /// when no rates were ever cached. Used to implement cache expiry.
+  Future<DateTime?> getFetchedAt();
+
   Future<void> saveSelectedCurrency(String code);
 
   Future<String> getSelectedCurrency();
@@ -36,6 +40,19 @@ class ExchangeRateLocalDataSourceImpl implements ExchangeRateLocalDataSource {
     }
 
     return ExchangeRateModel(Map<String, double>.from(cached));
+  }
+
+  @override
+  Future<DateTime?> getFetchedAt() async {
+    final box = await Hive.openBox(_rateBox);
+
+    final fetchedAt = box.get('fetched_at');
+
+    if (fetchedAt is! int) {
+      return null;
+    }
+
+    return DateTime.fromMillisecondsSinceEpoch(fetchedAt);
   }
 
   @override

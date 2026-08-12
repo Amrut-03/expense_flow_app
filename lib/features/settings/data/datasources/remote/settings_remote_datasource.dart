@@ -3,7 +3,7 @@ import '../../../domain/entities/user_settings.dart';
 
 abstract class SettingsRemoteDataSource {
   Future<void> push(UserSettings settings);
-  Future<UserSettings?> fetch();
+  Future<Map<String, dynamic>?> fetch();
 }
 
 class SettingsRemoteDataSourceImpl implements SettingsRemoteDataSource {
@@ -26,26 +26,24 @@ class SettingsRemoteDataSourceImpl implements SettingsRemoteDataSource {
     await _settings.doc(uid).set({
       'darkMode': settings.darkMode,
       'currencyCode': settings.currencyCode,
+      'localeCode': settings.localeCode,
     }, SetOptions(merge: true));
   }
 
+  /// Returns the raw stored settings document so the repository can merge the
+  /// remote values over the local ones. A `null` return means either the user
+  /// is not signed in, there is no stored document, or the document is empty.
   @override
-  Future<UserSettings?> fetch() async {
+  Future<Map<String, dynamic>?> fetch() async {
     final uid = getUid();
     if (uid == null || uid.isEmpty) {
       return null;
     }
     final doc = await _settings.doc(uid).get();
-    if (!doc.exists) {
-      return null;
-    }
     final data = doc.data();
-    if (data == null) {
+    if (!doc.exists || data == null) {
       return null;
     }
-    return UserSettings(
-      darkMode: data['darkMode'] as bool? ?? false,
-      currencyCode: data['currencyCode'] as String? ?? 'INR',
-    );
+    return data;
   }
 }

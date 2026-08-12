@@ -2,6 +2,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'dart:async';
 import '../../../../core/error/error_formatter.dart';
 import '../../../../core/error/failures.dart';
+import '../../../ai/domain/usecases/embed_pending_chunks_usecase.dart';
 import '../../domain/entities/expense_entity.dart';
 import '../../domain/usecases/add_expense_usecase.dart';
 import '../../domain/usecases/delete_expense_usecase.dart';
@@ -23,6 +24,7 @@ class ExpenseBloc extends Bloc<ExpenseEvent, ExpenseState> {
   final PushPendingChangesUseCase pushPendingChangesUseCase;
   final PullRemoteChangesUseCase pullRemoteChangesUseCase;
   final WatchRemoteExpensesUseCase watchRemoteExpensesUseCase;
+  final EmbedPendingChunksUseCase embedPendingChunksUseCase;
   StreamSubscription<dynamic>? _remoteSubscription;
 
   ExpenseBloc({
@@ -34,6 +36,7 @@ class ExpenseBloc extends Bloc<ExpenseEvent, ExpenseState> {
     required this.pushPendingChangesUseCase,
     required this.pullRemoteChangesUseCase,
     required this.watchRemoteExpensesUseCase,
+    required this.embedPendingChunksUseCase,
   }) : super(const ExpenseInitial()) {
     on<AddExpenseEvent>(_onAddExpense);
     on<LoadExpensesEvent>(_onLoadExpenses);
@@ -156,7 +159,8 @@ class ExpenseBloc extends Bloc<ExpenseEvent, ExpenseState> {
     }
   }
 
-  /// Rebuilds the AI chunks affected by [expenseId].
+  /// Rebuilds the AI chunks affected by [expenseId] and embeds any pending
+  /// chunks so the new data is immediately searchable.
   ///
   /// Best-effort background indexing: a failure must never break the
   /// expense flow, so errors are captured and discarded here.
@@ -165,6 +169,16 @@ class ExpenseBloc extends Bloc<ExpenseEvent, ExpenseState> {
       await regenerateAiChunksUseCase(expenseId);
     } catch (_) {
       // Index refresh is non-critical; ignore failures.
+    }
+
+    unawaited(_embedPending());
+  }
+
+  Future<void> _embedPending() async {
+    try {
+      await embedPendingChunksUseCase();
+    } catch (_) {
+      // Embedding is best-effort; retrieval falls back to lexical.
     }
   }
 
@@ -182,6 +196,18 @@ class ExpenseBloc extends Bloc<ExpenseEvent, ExpenseState> {
     RemoteWatchFailed event,
     Emitter<ExpenseState> emit,
   ) async {
+    final current = state;
+    if (current is ExpenseLoaded) {
+      // Keep showing the local data; only flag the transient live-sync
+      // failure instead of replacing the list with a full-screen error.
+      emit(
+        ExpenseLoaded(
+          current.expenses,
+          syncWarning: 'Live sync failed: ${event.message}',
+        ),
+      );
+      return;
+    }
     emit(ExpenseFailure('Live sync failed: ${event.message}'));
   }
 

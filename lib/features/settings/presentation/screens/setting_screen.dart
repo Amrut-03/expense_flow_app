@@ -12,16 +12,15 @@ import '../../../../core/widgets/neu_button.dart';
 import '../../../../core/widgets/neu_bottom_sheet.dart';
 import '../../../../core/widgets/neu_snack_bar.dart';
 import '../../../../core/widgets/neu_text_field.dart';
-import '../../../../core/widgets/sync_warning_banner.dart';
 import '../../../../core/widgets/tab_reveal.dart';
 import '../../../../l10n/app_localizations.dart';
 import '../../../auth/domain/entities/user_entity.dart';
 import '../../../auth/presentation/bloc/auth_bloc.dart';
 import '../../../auth/presentation/bloc/auth_event.dart';
 import '../../../auth/presentation/bloc/auth_state.dart';
-import '../../../currency/domain/entities/app_currency.dart';
 import '../../../currency/presentation/cubit/currency_cubit.dart';
 import '../../../currency/presentation/cubit/currency_state.dart';
+import '../../../currency/presentation/widgets/currency_picker.dart';
 import '../cubit/locale_cubit.dart';
 import '../widgets/setting_tile.dart';
 
@@ -203,7 +202,7 @@ class _SettingScreenState extends State<SettingScreen> {
                             );
                           },
                         ),
-                        onTap: () => _showCurrencyPicker(context),
+                        onTap: () => CurrencyPicker.show(context),
                       )
                       .animate(delay: 240.ms)
                       .fadeIn(duration: 260.ms, curve: Curves.easeOut)
@@ -367,6 +366,7 @@ class _SettingScreenState extends State<SettingScreen> {
               NeuButton(
                 label: l10n.auth_logOut,
                 onTap: () => Navigator.of(sheetContext).pop(true),
+                bgColor: palette.accent,
               ),
               SizedBox(height: 12.h),
             ],
@@ -378,98 +378,6 @@ class _SettingScreenState extends State<SettingScreen> {
     if (confirmed == true && mounted) {
       context.read<AuthBloc>().add(SignOutRequested());
     }
-  }
-
-  void _showCurrencyPicker(BuildContext context) {
-    final cubit = context.read<CurrencyCubit>();
-    final l10n = AppLocalizations.of(context);
-
-    NeuBottomSheet.show<void>(
-      context: context,
-      builder: (sheetContext) {
-        return BlocBuilder<CurrencyCubit, CurrencyState>(
-          bloc: cubit,
-          builder: (context, currencyState) {
-            final selected = currencyState.selected;
-            final palette = context.read<ThemeCubit>().state.palette;
-            return SafeArea(
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  const SheetDragHandle(),
-                  SizedBox(height: 20.h),
-
-                  Padding(
-                    padding: EdgeInsets.symmetric(horizontal: 20.w),
-                    child: Text(
-                      l10n.settings_changeCurrency,
-                      style: AppTextStyles.manrope(
-                        fontSize: 20.sp,
-                        fontWeight: FontWeight.bold,
-                        color: palette.textDark,
-                      ),
-                    ),
-                  ),
-
-                  Padding(
-                    padding: EdgeInsets.symmetric(horizontal: 20.w),
-                    child: Text(
-                      l10n.settings_chooseCurrency,
-                      style: AppTextStyles.manrope(
-                        fontSize: 14.sp,
-                        color: palette.textDark.withValues(alpha: .6),
-                      ),
-                    ),
-                  ),
-
-                  SizedBox(height: 12.h),
-
-                  if (currencyState.rateError != null) ...[
-                    Padding(
-                      padding: EdgeInsets.symmetric(horizontal: 20.w),
-                      child: SyncWarningBanner(
-                        message: currencyState.rateError!,
-                      ),
-                    ),
-                    SizedBox(height: 12.h),
-                  ],
-
-                  Flexible(
-                    child: ListView(
-                      shrinkWrap: true,
-                      children: supportedCurrencies.map((currency) {
-                        return ListTile(
-                          title: Text(
-                            '${currency.symbol}  ${currency.code}',
-                            style: AppTextStyles.manrope(
-                              color: palette.textDark,
-                              fontWeight: FontWeight.w500,
-                            ),
-                          ),
-                          trailing: currency.code == selected.code
-                              ? Icon(
-                                  Icons.check_circle_rounded,
-                                  color: palette.accent,
-                                )
-                              : null,
-                          onTap: () async {
-                            await cubit.changeCurrency(currency);
-                            if (sheetContext.mounted) {
-                              sheetContext.pop();
-                            }
-                          },
-                        );
-                      }).toList(),
-                    ),
-                  ),
-                ],
-              ),
-            );
-          },
-        );
-      },
-    );
   }
 
   String _localeLabel(String code) {

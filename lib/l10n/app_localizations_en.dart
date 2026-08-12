@@ -231,6 +231,12 @@ class AppLocalizationsEn extends AppLocalizations {
   String get dashboard_noTransactionsToday => 'No transactions today';
 
   @override
+  String get dashboard_spendingBreakdown => 'Spending breakdown';
+
+  @override
+  String get dashboard_monthlyTrend => 'Monthly trend';
+
+  @override
   String get addExpense_title => 'Add Expense';
 
   @override
@@ -357,6 +363,22 @@ class AppLocalizationsEn extends AppLocalizations {
   @override
   String budget_percentUsed(String percent) {
     return '$percent% used';
+  }
+
+  @override
+  String get budget_spendingBreakdown => 'Spending breakdown';
+
+  @override
+  String get budget_others => 'Others';
+
+  @override
+  String budget_spentAmount(String amount) {
+    return '$amount spent';
+  }
+
+  @override
+  String budget_ofAmount(String amount) {
+    return 'of $amount';
   }
 
   @override

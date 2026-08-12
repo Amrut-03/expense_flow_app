@@ -31,17 +31,21 @@ import 'l10n/app_localizations.dart';
 
 void main() {
   runZonedGuarded(
-    () async {
+        () async {
       WidgetsFlutterBinding.ensureInitialized();
 
       _installGlobalErrorHandlers();
+      debugPrint('[Boot] step1 handlers installed');
 
       await dotenv.load(fileName: ".env");
+      debugPrint('[Boot] step2 dotenv loaded');
       await Firebase.initializeApp(
         options: DefaultFirebaseOptions.currentPlatform,
       );
+      debugPrint('[Boot] step3 firebase initialized');
 
       await Hive.initFlutter();
+      debugPrint('[Boot] step4 hive init');
 
       Hive.registerAdapter(ExpenseModelAdapter());
       Hive.registerAdapter(BudgetModelAdapter());
@@ -56,11 +60,15 @@ void main() {
       await Hive.openBox<AppNotificationModel>('notifications_box');
       await Hive.openBox<dynamic>('notification_state_box');
       await Hive.openBox<dynamic>('notification_settings_box');
+      debugPrint('[Boot] step5 hive boxes opened');
 
       await di.initDependencyInjection();
+      debugPrint('[Boot] step6 di initialized');
+      debugPrint('[Boot] step6.1 DI returned, about to enter UI setup');
 
       final localNotifications = sl<LocalNotificationService>();
       await localNotifications.initialize(onTap: _handleNotificationTap);
+      debugPrint('[Boot] step7 local notifications initialized');
       unawaited(localNotifications.requestPermissions());
 
       unawaited(sl<NotificationScheduler>().scheduleAll());
@@ -68,16 +76,19 @@ void main() {
 
       unawaited(sl<BackgroundSummaryRefreshService>().refresh());
       unawaited(sl<FcmPushService>().initialize());
+      debugPrint('[Boot] step8 background services fired');
 
+      debugPrint('[Boot] step8.1 all pre-runApp setup done, calling runApp');
       runApp(const ExpenseFlowApp());
+      debugPrint('[Boot] step9 runApp returned');
     },
-    (error, stack) {
+        (error, stack) {
       _reportUnhandledError(error, stack);
     },
   );
 }
 
-/// Hooks into Flutter's error pipelines so nothing fails silently.
+/// Hooks into Flutter's  error pipelines so nothing fails silently.
 ///
 /// `FlutterError.onError` catches framework build/layout/paint errors;
 /// `PlatformDispatcher.instance.onError` catches uncaught async errors.
@@ -95,11 +106,8 @@ void _installGlobalErrorHandlers() {
 }
 
 void _reportUnhandledError(Object error, StackTrace? stack) {
-  assert(() {
-    debugPrint('[ExpenseFlow] Unhandled error: $error');
-    if (stack != null) debugPrint(stack.toString());
-    return true;
-  }());
+  debugPrint('[ExpenseFlow] Unhandled error: $error');
+  if (stack != null) debugPrint(stack.toString());
 }
 
 /// Routes the user to the screen associated with a tapped local notification.
@@ -140,10 +148,10 @@ class ExpenseFlowApp extends StatelessWidget {
                     routerConfig: AppRouter.router,
                     debugShowCheckedModeBanner: false,
                     onGenerateTitle: (context) =>
-                        AppLocalizations.of(context).appTitle,
+                    AppLocalizations.of(context).appTitle,
                     locale: locale,
                     localizationsDelegates:
-                        AppLocalizations.localizationsDelegates,
+                    AppLocalizations.localizationsDelegates,
                     supportedLocales: AppLocalizations.supportedLocales,
                     themeMode: themeState.mode == AppThemeMode.dark
                         ? ThemeMode.dark

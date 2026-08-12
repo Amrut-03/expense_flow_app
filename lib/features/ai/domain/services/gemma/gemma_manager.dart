@@ -21,8 +21,14 @@ abstract interface class GemmaManager {
 
   /// Streams the model's token-by-token response for [prompt].
   ///
-  /// The stream completes when generation finishes.
-  Future<Stream<String>> generateResponse(String prompt);
+  /// [systemInstruction], when provided, is sent as the model's system
+  /// message so the model treats it as authoritative context (for example
+  /// "answer only from the data below"). The stream completes when
+  /// generation finishes.
+  Future<Stream<String>> generateResponse(
+    String prompt, {
+    String? systemInstruction,
+  });
 
   /// Releases the loaded model and resets the Gemma runtime.
   Future<void> dispose();

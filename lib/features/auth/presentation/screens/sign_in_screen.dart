@@ -78,252 +78,285 @@ class _LoginScreenState extends State<LoginScreen> {
 
             return GestureDetector(
               onTap: () => FocusScope.of(context).unfocus(),
-              child: SingleChildScrollView(
-                padding: const EdgeInsets.symmetric(horizontal: 24),
-                child: Form(
-                  key: _formKey,
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      const SizedBox(height: 40),
+              child: Column(
+                children: [
+                  Expanded(
+                    child: SingleChildScrollView(
+                      padding: const EdgeInsets.symmetric(horizontal: 24),
+                      child: Form(
+                        key: _formKey,
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            const SizedBox(height: 40),
 
-                      Text(
-                            l10n.auth_welcomeBack,
-                            style: AppTextStyles.manrope(
-                              fontSize: 22,
-                              fontWeight: FontWeight.w800,
-                              color: palette.textDark,
+                            Text(
+                                  l10n.auth_welcomeBack,
+                                  style: AppTextStyles.manrope(
+                                    fontSize: 22,
+                                    fontWeight: FontWeight.w800,
+                                    color: palette.textDark,
+                                  ),
+                                )
+                                .animate()
+                                .fadeIn(duration: 300.ms, curve: Curves.easeOut)
+                                .slideY(
+                                  begin: 0.06,
+                                  end: 0,
+                                  curve: Curves.easeOutCubic,
+                                ),
+
+                            const SizedBox(height: 4),
+
+                            Text(
+                                  l10n.auth_loginSubtitle,
+                                  style: AppTextStyles.manrope(
+                                    fontSize: 12,
+                                    color: palette.textMuted,
+                                  ),
+                                )
+                                .animate(delay: 80.ms)
+                                .fadeIn(
+                                  duration: 300.ms,
+                                  curve: Curves.easeOut,
+                                ),
+
+                            const SizedBox(height: 32),
+
+                            NeuTextField(
+                                  controller: _emailController,
+                                  hint: l10n.auth_emailAddress,
+                                  keyboardType: TextInputType.emailAddress,
+                                  textInputAction: TextInputAction.next,
+                                  autofillHints: const [AutofillHints.email],
+                                  validator: (value) {
+                                    if (value == null || value.trim().isEmpty) {
+                                      return l10n.auth_emailRequired;
+                                    }
+
+                                    final emailRegex = RegExp(
+                                      r'^[\w-.]+@([\w-]+\.)+[\w-]{2,4}$',
+                                    );
+
+                                    if (!emailRegex.hasMatch(value.trim())) {
+                                      return l10n.auth_invalidEmail;
+                                    }
+
+                                    return null;
+                                  },
+                                )
+                                .animate(delay: 140.ms)
+                                .fadeIn(duration: 300.ms, curve: Curves.easeOut)
+                                .slideY(
+                                  begin: 0.06,
+                                  end: 0,
+                                  curve: Curves.easeOutCubic,
+                                ),
+
+                            SizedBox(height: 14.h),
+
+                            NeuTextField(
+                                  controller: _passwordController,
+                                  hint: l10n.auth_password,
+                                  obscureText: _obscurePassword,
+                                  textInputAction: TextInputAction.done,
+                                  autofillHints: const [AutofillHints.password],
+                                  onFieldSubmitted: (_) => _submit(),
+                                  suffixIcon: IconButton(
+                                    icon: Icon(
+                                      _obscurePassword
+                                          ? Icons.visibility_off
+                                          : Icons.visibility,
+                                      size: 18.h,
+                                      color: palette.textMuted,
+                                    ),
+                                    onPressed: () {
+                                      setState(() {
+                                        _obscurePassword = !_obscurePassword;
+                                      });
+                                    },
+                                  ),
+                                  validator: (value) {
+                                    if (value == null || value.isEmpty) {
+                                      return l10n.auth_passwordRequired;
+                                    }
+
+                                    if (value.length < 6) {
+                                      return l10n.auth_passwordMinChars;
+                                    }
+
+                                    return null;
+                                  },
+                                )
+                                .animate(delay: 200.ms)
+                                .fadeIn(duration: 300.ms, curve: Curves.easeOut)
+                                .slideY(
+                                  begin: 0.06,
+                                  end: 0,
+                                  curve: Curves.easeOutCubic,
+                                ),
+
+                            Align(
+                              alignment: Alignment.centerRight,
+                              child: TextButton(
+                                onPressed: () {
+                                  context.push('/forgot-password');
+                                },
+                                child: Text(
+                                  l10n.auth_forgotPassword,
+                                  style: AppTextStyles.manrope(
+                                    fontSize: 11,
+                                    color: palette.accent,
+                                    fontWeight: FontWeight.w600,
+                                  ),
+                                ),
+                              ),
+                            ).animate(delay: 440.ms)
+                                .fadeIn(duration: 300.ms, curve: Curves.easeOut)
+                                .slideY(
+                              begin: 0.06,
+                              end: 0,
+                              curve: Curves.easeOutCubic,
                             ),
-                          )
-                          .animate()
-                          .fadeIn(duration: 300.ms, curve: Curves.easeOut)
-                          .slideY(
-                            begin: 0.06,
-                            end: 0,
-                            curve: Curves.easeOutCubic,
-                          ),
 
-                      const SizedBox(height: 4),
+                            const SizedBox(height: 8),
 
-                      Text(
-                            l10n.auth_loginSubtitle,
-                            style: AppTextStyles.manrope(
-                              fontSize: 12,
-                              color: palette.textMuted,
-                            ),
-                          )
-                          .animate(delay: 80.ms)
-                          .fadeIn(duration: 300.ms, curve: Curves.easeOut),
+                            GestureDetector(
+                                  onTap: isLoading ? null : _submit,
+                                  child: Container(
+                                    height: 48,
+                                    alignment: Alignment.center,
+                                    decoration: NeuBox.raised(
+                                      palette,
+                                      radius: 24,
+                                    ).copyWith(color: palette.accent),
+                                    child: isLoading
+                                        ? SizedBox(
+                                            width: 20,
+                                            height: 20,
+                                            child: CircularProgressIndicator(
+                                              strokeWidth: 2,
+                                              color: palette.onAccent,
+                                            ),
+                                          )
+                                        : Text(
+                                            l10n.auth_logIn,
+                                            style: AppTextStyles.manrope(
+                                              fontSize: 13,
+                                              fontWeight: FontWeight.w700,
+                                              color: palette.onAccent,
+                                            ),
+                                          ),
+                                  ),
+                                )
+                                .animate(delay: 280.ms)
+                                .fadeIn(duration: 300.ms, curve: Curves.easeOut)
+                                .slideY(
+                                  begin: 0.06,
+                                  end: 0,
+                                  curve: Curves.easeOutCubic,
+                                ),
 
-                      const SizedBox(height: 32),
+                            const SizedBox(height: 20),
 
-                      NeuTextField(
-                            controller: _emailController,
-                            hint: l10n.auth_emailAddress,
-                            keyboardType: TextInputType.emailAddress,
-                            textInputAction: TextInputAction.next,
-                            autofillHints: const [AutofillHints.email],
-                            validator: (value) {
-                              if (value == null || value.trim().isEmpty) {
-                                return l10n.auth_emailRequired;
-                              }
+                            Center(
+                                  child: Text(
+                                    l10n.auth_orContinueWith,
+                                    style: AppTextStyles.manrope(
+                                      fontSize: 10,
+                                      color: palette.textMuted,
+                                    ),
+                                  ),
+                                )
+                                .animate(delay: 360.ms)
+                                .fadeIn(
+                                  duration: 300.ms,
+                                  curve: Curves.easeOut,
+                                ),
 
-                              final emailRegex = RegExp(
-                                r'^[\w-.]+@([\w-]+\.)+[\w-]{2,4}$',
-                              );
+                            const SizedBox(height: 16),
 
-                              if (!emailRegex.hasMatch(value.trim())) {
-                                return l10n.auth_invalidEmail;
-                              }
+                            NeuButton(
+                              label: l10n.common_google,
+                              onTap: isLoading
+                                  ? null
+                                  : () {
+                                      context.read<AuthBloc>().add(
+                                        const GoogleSignInRequested(),
+                                      );
+                                    },
+                            ).animate(delay: 440.ms)
+                                .fadeIn(duration: 300.ms, curve: Curves.easeOut)
+                                .slideY(
+                                  begin: 0.06,
+                                  end: 0,
+                                  curve: Curves.easeOutCubic,
+                                ),
 
-                              return null;
-                            },
-                          )
-                          .animate(delay: 140.ms)
-                          .fadeIn(duration: 300.ms, curve: Curves.easeOut)
-                          .slideY(
-                            begin: 0.06,
-                            end: 0,
-                            curve: Curves.easeOutCubic,
-                          ),
-
-                      SizedBox(height: 14.h),
-
-                      NeuTextField(
-                            controller: _passwordController,
-                            hint: l10n.auth_password,
-                            obscureText: _obscurePassword,
-                            textInputAction: TextInputAction.done,
-                            autofillHints: const [AutofillHints.password],
-                            onFieldSubmitted: (_) => _submit(),
-                            suffixIcon: IconButton(
-                              icon: Icon(
-                                _obscurePassword
-                                    ? Icons.visibility_off
-                                    : Icons.visibility,
-                                size: 18.h,
+                            // Row(
+                            //       children: [
+                            //         Expanded(
+                            //           child: NeuButton(
+                            //             label: l10n.common_google,
+                            //             onTap: isLoading
+                            //                 ? null
+                            //                 : () {
+                            //                     context.read<AuthBloc>().add(
+                            //                       const GoogleSignInRequested(),
+                            //                     );
+                            //                   },
+                            //           ),
+                            //         ),
+                            //         const SizedBox(width: 10),
+                            //         Expanded(
+                            //           child: NeuButton(
+                            //             label: l10n.common_apple,
+                            //             onTap: isLoading ? null : () {},
+                            //           ),
+                            //         ),
+                            //       ],
+                            //     )
+                            //     .animate(delay: 440.ms)
+                            //     .fadeIn(duration: 300.ms, curve: Curves.easeOut)
+                            //     .slideY(
+                            //       begin: 0.06,
+                            //       end: 0,
+                            //       curve: Curves.easeOutCubic,
+                            //     ),
+                            const SizedBox(height: 24),
+                          ],
+                        ),
+                      ),
+                    ),
+                  ),
+                  Center(
+                        child: GestureDetector(
+                          onTap: () => context.push('/signup'),
+                          child: RichText(
+                            text: TextSpan(
+                              style: AppTextStyles.manrope(
+                                fontSize: 11,
                                 color: palette.textMuted,
                               ),
-                              onPressed: () {
-                                setState(() {
-                                  _obscurePassword = !_obscurePassword;
-                                });
-                              },
-                            ),
-                            validator: (value) {
-                              if (value == null || value.isEmpty) {
-                                return l10n.auth_passwordRequired;
-                              }
-
-                              if (value.length < 6) {
-                                return l10n.auth_passwordMinChars;
-                              }
-
-                              return null;
-                            },
-                          )
-                          .animate(delay: 200.ms)
-                          .fadeIn(duration: 300.ms, curve: Curves.easeOut)
-                          .slideY(
-                            begin: 0.06,
-                            end: 0,
-                            curve: Curves.easeOutCubic,
-                          ),
-
-                      Align(
-                        alignment: Alignment.centerRight,
-                        child: TextButton(
-                          onPressed: () {
-                            context.push('/forgot-password');
-                          },
-                          child: Text(
-                            l10n.auth_forgotPassword,
-                            style: AppTextStyles.manrope(
-                              fontSize: 11,
-                              color: palette.accent,
-                              fontWeight: FontWeight.w600,
+                              children: [
+                                TextSpan(text: l10n.auth_dontHaveAccount),
+                                TextSpan(
+                                  text: l10n.auth_signUp,
+                                  style: AppTextStyles.manrope(
+                                    fontWeight: FontWeight.w700,
+                                    color: palette.accent,
+                                  ),
+                                ),
+                              ],
                             ),
                           ),
                         ),
-                      ),
+                      )
+                      .animate(delay: 520.ms)
+                      .fadeIn(duration: 300.ms, curve: Curves.easeOut),
 
-                      const SizedBox(height: 8),
-
-                      GestureDetector(
-                            onTap: isLoading ? null : _submit,
-                            child: Container(
-                              height: 48,
-                              alignment: Alignment.center,
-                              decoration: NeuBox.raised(
-                                palette,
-                                radius: 24,
-                              ).copyWith(color: palette.accent),
-                              child: isLoading
-                                  ? SizedBox(
-                                      width: 20,
-                                      height: 20,
-                                      child: CircularProgressIndicator(
-                                        strokeWidth: 2,
-                                        color: palette.onAccent,
-                                      ),
-                                    )
-                                  : Text(
-                                      l10n.auth_logIn,
-                                      style: AppTextStyles.manrope(
-                                        fontSize: 13,
-                                        fontWeight: FontWeight.w700,
-                                        color: palette.onAccent,
-                                      ),
-                                    ),
-                            ),
-                          )
-                          .animate(delay: 280.ms)
-                          .fadeIn(duration: 300.ms, curve: Curves.easeOut)
-                          .slideY(
-                            begin: 0.06,
-                            end: 0,
-                            curve: Curves.easeOutCubic,
-                          ),
-
-                      const SizedBox(height: 20),
-
-                      Center(
-                            child: Text(
-                              l10n.auth_orContinueWith,
-                              style: AppTextStyles.manrope(
-                                fontSize: 10,
-                                color: palette.textMuted,
-                              ),
-                            ),
-                          )
-                          .animate(delay: 360.ms)
-                          .fadeIn(duration: 300.ms, curve: Curves.easeOut),
-
-                      const SizedBox(height: 16),
-
-                      Row(
-                            children: [
-                              Expanded(
-                                child: NeuButton(
-                                  label: l10n.common_google,
-                                  onTap: isLoading
-                                      ? null
-                                      : () {
-                                          context.read<AuthBloc>().add(
-                                            const GoogleSignInRequested(),
-                                          );
-                                        },
-                                ),
-                              ),
-                              const SizedBox(width: 10),
-                              Expanded(
-                                child: NeuButton(
-                                  label: l10n.common_apple,
-                                  onTap: isLoading ? null : () {},
-                                ),
-                              ),
-                            ],
-                          )
-                          .animate(delay: 440.ms)
-                          .fadeIn(duration: 300.ms, curve: Curves.easeOut)
-                          .slideY(
-                            begin: 0.06,
-                            end: 0,
-                            curve: Curves.easeOutCubic,
-                          ),
-
-                      const SizedBox(height: 24),
-
-                      Center(
-                            child: GestureDetector(
-                              onTap: () => context.push('/signup'),
-                              child: RichText(
-                                text: TextSpan(
-                                  style: AppTextStyles.manrope(
-                                    fontSize: 11,
-                                    color: palette.textMuted,
-                                  ),
-                                  children: [
-                                    TextSpan(text: l10n.auth_dontHaveAccount),
-                                    TextSpan(
-                                      text: l10n.auth_signUp,
-                                      style: AppTextStyles.manrope(
-                                        fontWeight: FontWeight.w700,
-                                        color: palette.accent,
-                                      ),
-                                    ),
-                                  ],
-                                ),
-                              ),
-                            ),
-                          )
-                          .animate(delay: 520.ms)
-                          .fadeIn(duration: 300.ms, curve: Curves.easeOut),
-
-                      const SizedBox(height: 24),
-                    ],
-                  ),
-                ),
+                  const SizedBox(height: 24),
+                ],
               ),
             );
           },
