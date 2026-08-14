@@ -69,7 +69,7 @@ jobs:
         with:
           serviceAccountJsonPlainText: ${{ secrets.PLAY_APP_SERVICE_ACCOUNT_JSON }}
           packageName: com.nextgen.expenseflowapp
-          releaseFiles: ${{ inputs.appbundle != 'false' && github.workspace + '/build/app/outputs/bundle/release/app-release.aab' || github.workspace + '/build/app/outputs/flutter-apk/app-release.apk' }}
+          releaseFiles: ${{ inputs.appbundle != 'false' && format('{0}/build/app/outputs/bundle/release/app-release.aab', github.workspace) || format('{0}/build/app/outputs/flutter-apk/app-release.apk', github.workspace) }}
           track: ${{ inputs.track || 'internal' }}
           status: completed
           changesNotSentForReview: true
