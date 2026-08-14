@@ -47,6 +47,13 @@ jobs:
       - name: Recreate release signing key
         run: |
           echo "${{ secrets.ANDROID_KEYSTORE_BASE64 }}" | base64 --decode > android/upload-keystore.jks
+      - name: Recreate .env file
+        run: |
+          if [ -z "${{ secrets.ENV_FILE_BASE64 }}" ]; then
+            echo "::error::ENV_FILE_BASE64 secret is not set in repository secrets. Add the base64 of your local .env and re-run."
+            exit 1
+          fi
+          echo "${{ secrets.ENV_FILE_BASE64 }}" | base64 --decode > .env
       - name: Build release AAB
         if: inputs.appbundle != 'false' || github.event_name != 'workflow_dispatch'
         run: flutter build appbundle --release
