@@ -3,6 +3,8 @@ import 'package:flutter_timezone/flutter_timezone.dart';
 import 'package:timezone/data/latest_all.dart' as tzdata;
 import 'package:timezone/timezone.dart' as tz;
 
+import '../logging/app_log_buffer.dart';
+
 /// Android notification channels used across the app. Channels are created once
 /// at startup so their importance/priority settings stick.
 abstract final class NotificationChannels {
@@ -155,8 +157,9 @@ class LocalNotificationService {
     var location = 'Asia/Kolkata';
     try {
       location = (await FlutterTimezone.getLocalTimezone()).identifier;
-    } catch (_) {
+    } catch (e, st) {
       // Fall back to a default when the plugin cannot report the device zone.
+      AppLogBuffer.instance.captureError('notifications.timeZoneLookup', e, st);
     }
 
     tz.setLocalLocation(tz.getLocation(location));

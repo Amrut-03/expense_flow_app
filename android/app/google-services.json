@@ -14,11 +14,27 @@
       },
       "oauth_client": [
         {
+          "client_id": "354658451800-ceilg19craojalav2ku4m9b3iflch0bj.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.nextgen.expenseflowapp",
+            "certificate_hash": "d29547e3548ef4badabf194fa5052bf4d6ad7bdf"
+          }
+        },
+        {
           "client_id": "354658451800-h3f3r4t7t9m5t97nv462frte6jv2j4qv.apps.googleusercontent.com",
           "client_type": 1,
           "android_info": {
             "package_name": "com.nextgen.expenseflowapp",
             "certificate_hash": "54c7a8f8d2d5ea570d8a14934eae0a85aac4f61d"
+          }
+        },
+        {
+          "client_id": "354658451800-socc6ufgursn5fhs49d25e31qi8pn3mf.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.nextgen.expenseflowapp",
+            "certificate_hash": "b19ba44ac9e35209931c01d0a91c8e7d4422f0ea"
           }
         },
         {

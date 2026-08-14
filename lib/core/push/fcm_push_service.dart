@@ -1,6 +1,5 @@
 import 'package:firebase_auth/firebase_auth.dart' as fb;
 import 'package:firebase_messaging/firebase_messaging.dart';
-import 'package:flutter/foundation.dart';
 import 'package:hive_flutter/hive_flutter.dart';
 import 'package:uuid/uuid.dart';
 
@@ -9,6 +8,7 @@ import '../../features/notifications/domain/entities/app_notification.dart';
 import '../../features/notifications/domain/entities/notification_type.dart';
 import '../../features/notifications/domain/usecases/save_fcm_token_usecase.dart';
 import '../../features/notifications/domain/usecases/save_notification_usecase.dart';
+import '../logging/app_log_buffer.dart';
 import '../notifications/local_notification_service.dart';
 import '../notifications/notification_payload.dart';
 import '../router/app_router.dart';
@@ -30,8 +30,11 @@ Future<void> firebaseMessagingBackgroundHandler(RemoteMessage message) async {
       AppNotificationModel.fromEntity(notification),
     );
   } catch (error, stackTrace) {
-    debugPrint('[FcmPush] background persist failed: $error');
-    debugPrint(stackTrace.toString());
+    AppLogBuffer.instance.captureError(
+      'fcm.backgroundPersist',
+      error,
+      stackTrace,
+    );
   }
 }
 
@@ -146,15 +149,12 @@ class FcmPushService {
   Future<void> _saveToken(String? token) async {
     if (token == null || token.isEmpty) return;
 
-    debugPrint('[FcmPush] device token: $token');
-
     try {
       await saveFcmToken(token);
     } catch (error, stackTrace) {
       // Token registration must never break the app bootstrap; the device is
       // still reachable via the token until Firestore rules permit the write.
-      debugPrint('[FcmPush] token save failed: $error');
-      debugPrint(stackTrace.toString());
+      AppLogBuffer.instance.captureError('fcm.saveToken', error, stackTrace);
     }
   }
 }

@@ -4,6 +4,7 @@ import 'package:google_sign_in/google_sign_in.dart';
 
 import '../../../../core/error/error_formatter.dart';
 import '../../../../core/error/failures.dart';
+import '../../../../core/logging/app_log_buffer.dart';
 import '../../domain/entities/user_entity.dart';
 import '../../domain/repositories/auth_repository.dart';
 import '../datasources/auth_datasource_impl.dart';
@@ -20,6 +21,7 @@ class AuthRepositoryImpl implements AuthRepository {
 
       return Right(user);
     } catch (e) {
+      AppLogBuffer.instance.captureError('auth.getCurrentUser', e);
       return Left(ServerFailure(friendlyError(e)));
     }
   }
@@ -34,8 +36,18 @@ class AuthRepositoryImpl implements AuthRepository {
 
       return Right(user);
     } on fb.FirebaseAuthException catch (e) {
+      AppLogBuffer.instance.captureError(
+        'auth.signInWithEmail',
+        e,
+        StackTrace.current,
+      );
       return Left(ServerFailure(_mapAuthError(e)));
     } catch (e) {
+      AppLogBuffer.instance.captureError(
+        'auth.signInWithEmail',
+        e,
+        StackTrace.current,
+      );
       return Left(ServerFailure(friendlyError(e)));
     }
   }
@@ -50,8 +62,18 @@ class AuthRepositoryImpl implements AuthRepository {
 
       return Right(user);
     } on fb.FirebaseAuthException catch (e) {
+      AppLogBuffer.instance.captureError(
+        'auth.signUpWithEmail',
+        e,
+        StackTrace.current,
+      );
       return Left(ServerFailure(_mapAuthError(e)));
     } catch (e) {
+      AppLogBuffer.instance.captureError(
+        'auth.signUpWithEmail',
+        e,
+        StackTrace.current,
+      );
       return Left(ServerFailure(friendlyError(e)));
     }
   }
@@ -63,10 +85,19 @@ class AuthRepositoryImpl implements AuthRepository {
 
       return Right(user);
     } on GoogleSignInException catch (e) {
+      AppLogBuffer.instance.captureError(
+        'auth.signInWithGoogle (GoogleSignInException)',
+        e,
+      );
       return Left(
         ServerFailure('Google sign-in failed: ${e.description ?? e.code}'),
       );
     } catch (e) {
+      AppLogBuffer.instance.captureError(
+        'auth.signInWithGoogle',
+        e,
+        StackTrace.current,
+      );
       return Left(ServerFailure(friendlyError(e)));
     }
   }
@@ -78,6 +109,11 @@ class AuthRepositoryImpl implements AuthRepository {
 
       return const Right(null);
     } catch (e) {
+      AppLogBuffer.instance.captureError(
+        'auth.signOut',
+        e,
+        StackTrace.current,
+      );
       return Left(ServerFailure(friendlyError(e)));
     }
   }
@@ -89,8 +125,18 @@ class AuthRepositoryImpl implements AuthRepository {
 
       return const Right(null);
     } on fb.FirebaseAuthException catch (e) {
+      AppLogBuffer.instance.captureError(
+        'auth.forgotPassword',
+        e,
+        StackTrace.current,
+      );
       return Left(ServerFailure(_mapAuthError(e)));
     } catch (e) {
+      AppLogBuffer.instance.captureError(
+        'auth.forgotPassword',
+        e,
+        StackTrace.current,
+      );
       return Left(ServerFailure(friendlyError(e)));
     }
   }
@@ -102,8 +148,18 @@ class AuthRepositoryImpl implements AuthRepository {
 
       return Right(user);
     } on fb.FirebaseAuthException catch (e) {
+      AppLogBuffer.instance.captureError(
+        'auth.updateProfile',
+        e,
+        StackTrace.current,
+      );
       return Left(ServerFailure(_mapAuthError(e)));
     } catch (e) {
+      AppLogBuffer.instance.captureError(
+        'auth.updateProfile',
+        e,
+        StackTrace.current,
+      );
       return Left(ServerFailure(friendlyError(e)));
     }
   }

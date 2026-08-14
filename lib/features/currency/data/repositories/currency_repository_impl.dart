@@ -1,3 +1,4 @@
+import '../../../../core/logging/app_log_buffer.dart';
 import '../../domain/entities/exchange_rate_entity.dart';
 import '../../domain/repositories/currency_repository.dart';
 import '../datasources/local/exchange_rate_local_datasource.dart';
@@ -28,7 +29,12 @@ class CurrencyRepositoryImpl implements CurrencyRepository {
       final rates = await remote.getRates();
       await local.cacheRates(rates);
       return rates;
-    } catch (_) {
+    } catch (e, st) {
+      AppLogBuffer.instance.captureError(
+        'currency.getExchangeRates (remote, falling back to cache)',
+        e,
+        st,
+      );
       // The cache is stale or missing and the remote is unreachable: fall
       // back to whatever we still have locally rather than failing.
       if (cached != null) {

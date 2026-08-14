@@ -1,6 +1,8 @@
 import 'package:dio/dio.dart';
 import 'package:flutter/foundation.dart';
 
+import '../logging/app_log_buffer.dart';
+
 /// Configured [Dio] wrapper shared across API calls.
 ///
 /// The [baseUrl] is injected from configuration (`.env`, see
@@ -33,7 +35,12 @@ class DioClient {
               if (token != null && token.isNotEmpty) {
                 options.headers['Authorization'] = 'Bearer $token';
               }
-            } catch (_) {
+            } catch (e, st) {
+              AppLogBuffer.instance.captureError(
+                'dio.authToken',
+                e,
+                st,
+              );
               // Requests must proceed even if auth token lookup fails; the
               // backend will reject unauthenticated calls on its own.
             }
@@ -41,7 +48,15 @@ class DioClient {
           return handler.next(options);
         },
         onError: (DioException error, handler) {
-          // centralized error logging point
+          // Centralized logging point: record the HTTP failure with the exact
+          // request/response detail so bug reports capture the real cause.
+          final method = error.requestOptions.method;
+          final uri = error.requestOptions.uri;
+          AppLogBuffer.instance.captureError(
+            'dio.$method ${uri.path}',
+            error,
+            error.stackTrace,
+          );
           return handler.next(error);
         },
       ),

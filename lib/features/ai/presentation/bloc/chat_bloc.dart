@@ -1,9 +1,9 @@
 import 'dart:async';
 
+import 'package:expense_flow_app/core/logging/app_log_buffer.dart';
 import 'package:expense_flow_app/features/ai/domain/entities/chat_turn.dart';
 import 'package:expense_flow_app/features/ai/domain/usecases/ask_question_usecase.dart';
 import 'package:expense_flow_app/features/ai/domain/usecases/embed_pending_chunks_usecase.dart';
-import 'package:flutter/foundation.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'chat_event.dart';
 import 'chat_state.dart';
@@ -44,10 +44,11 @@ class ChatBloc extends Bloc<ChatEvent, ChatState> {
         await embedPendingChunks();
       } catch (error, stackTrace) {
         _warmUpStarted = false;
-        if (kDebugMode) {
-          debugPrint('[ChatBloc] embedding warm-up failed: $error');
-          debugPrint('$stackTrace');
-        }
+        AppLogBuffer.instance.captureError(
+          'chat.embeddingWarmUp',
+          error,
+          stackTrace,
+        );
       }
     }());
   }
@@ -112,13 +113,6 @@ class ChatBloc extends Bloc<ChatEvent, ChatState> {
 
       final answer = ChatBloc.cleanAnswer(tokens.join());
       if (answer.isEmpty) {
-        if (kDebugMode) {
-          debugPrint(
-            '[ChatBloc] model emitted no tokens for "$question"; '
-            'the "couldn\'t find anything" message is shown for an empty '
-            'model response, not a retrieval miss.',
-          );
-        }
         _conversation.add(
           const ChatMessage(
             text:
@@ -137,6 +131,7 @@ class ChatBloc extends Bloc<ChatEvent, ChatState> {
         ),
       );
     } catch (e) {
+      AppLogBuffer.instance.captureError('chat.answer', e, StackTrace.current);
       final message = aiFriendlyError(e);
       _conversation.add(ChatMessage(text: message, isUser: false));
       emit(

@@ -1,6 +1,7 @@
 import 'package:dartz/dartz.dart';
 import '../../../../core/error/error_formatter.dart';
 import '../../../../core/error/failures.dart';
+import '../../../../core/logging/app_log_buffer.dart';
 import '../../../../core/network/network_info.dart';
 import '../../domain/entities/budget_entity.dart';
 import '../../domain/repositories/budget_sync_repository.dart';
@@ -48,6 +49,11 @@ class BudgetSyncRepositoryImpl implements BudgetSyncRepository {
       await localDataSource.saveAll(updated);
       return const Right(null);
     } catch (e) {
+      AppLogBuffer.instance.captureError(
+        'budgetSync.push',
+        e,
+        StackTrace.current,
+      );
       return Left(SyncFailure(friendlyError(e)));
     }
   }
@@ -62,6 +68,11 @@ class BudgetSyncRepositoryImpl implements BudgetSyncRepository {
       await _mergeIntoLocal(remote);
       return const Right(null);
     } catch (e) {
+      AppLogBuffer.instance.captureError(
+        'budgetSync.pull',
+        e,
+        StackTrace.current,
+      );
       return Left(SyncFailure(friendlyError(e)));
     }
   }

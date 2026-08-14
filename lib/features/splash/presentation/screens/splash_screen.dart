@@ -27,7 +27,6 @@ class _SplashScreenState extends State<SplashScreen> {
   @override
   void initState() {
     super.initState();
-    debugPrint('[Splash] initState: first screen mounted, UI is alive');
     _navigateNext();
   }
 
@@ -50,7 +49,6 @@ class _SplashScreenState extends State<SplashScreen> {
 
   @override
   Widget build(BuildContext context) {
-    debugPrint('[Splash] build: first screen painting');
     final palette = context.watch<ThemeCubit>().state.palette;
 
     return BlocListener<AuthBloc, AuthState>(

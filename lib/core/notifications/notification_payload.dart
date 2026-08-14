@@ -1,5 +1,6 @@
 import 'dart:convert';
 
+import '../logging/app_log_buffer.dart';
 import '../../features/notifications/domain/entities/notification_type.dart';
 
 /// A consistent, JSON-serialisable payload attached to local notifications.
@@ -45,7 +46,8 @@ class NotificationPayload {
         emoji: data['emoji'] as String?,
         categoryId: data['categoryId'] as String?,
       );
-    } catch (_) {
+    } catch (e, st) {
+      AppLogBuffer.instance.captureError('notifications.payloadDecode', e, st);
       return null;
     }
   }

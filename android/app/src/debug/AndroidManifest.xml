@@ -4,4 +4,8 @@
          to allow setting breakpoints, to provide hot reload, etc.
     -->
     <uses-permission android:name="android.permission.INTERNET"/>
+    <!-- Development-only: lets the app read the full system log (logcat) so
+         the log report can include every line the debug console shows. Only
+         takes effect in debuggable builds; ignored in release. -->
+    <uses-permission android:name="android.permission.READ_LOGS"/>
 </manifest>

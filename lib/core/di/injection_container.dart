@@ -31,6 +31,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:connectivity_plus/connectivity_plus.dart';
 import 'package:firebase_auth/firebase_auth.dart' as fb;
 import 'package:hive/hive.dart';
+import '../logging/app_log_buffer.dart';
 import '../../features/currency/data/datasources/local/exchange_rate_local_datasource.dart';
 import '../../features/currency/data/datasources/remote/exchange_rate_remote_datasource.dart';
 import '../../features/currency/data/repositories/currency_converter_impl.dart';
@@ -201,7 +202,8 @@ Future<void> initDependencyInjection() async {
       if (user == null) return null;
       try {
         return await user.getIdToken();
-      } catch (_) {
+      } catch (e, st) {
+        AppLogBuffer.instance.captureError('dio.authToken.di', e, st);
         return null;
       }
     },

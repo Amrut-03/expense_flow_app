@@ -472,6 +472,30 @@ abstract class AppLocalizations {
   /// **'Choose your preferred currency'**
   String get settings_chooseCurrency;
 
+  /// No description provided for @settings_logReport.
+  ///
+  /// In en, this message translates to:
+  /// **'Log report'**
+  String get settings_logReport;
+
+  /// No description provided for @settings_logReportGenerating.
+  ///
+  /// In en, this message translates to:
+  /// **'Generating log report…'**
+  String get settings_logReportGenerating;
+
+  /// No description provided for @settings_logReportReady.
+  ///
+  /// In en, this message translates to:
+  /// **'Log report ready'**
+  String get settings_logReportReady;
+
+  /// No description provided for @settings_logReportFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Failed to create log report'**
+  String get settings_logReportFailed;
+
   /// No description provided for @language_title.
   ///
   /// In en, this message translates to:

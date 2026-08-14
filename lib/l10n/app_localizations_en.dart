@@ -201,6 +201,18 @@ class AppLocalizationsEn extends AppLocalizations {
   String get settings_chooseCurrency => 'Choose your preferred currency';
 
   @override
+  String get settings_logReport => 'Log report';
+
+  @override
+  String get settings_logReportGenerating => 'Generating log report…';
+
+  @override
+  String get settings_logReportReady => 'Log report ready';
+
+  @override
+  String get settings_logReportFailed => 'Failed to create log report';
+
+  @override
   String get language_title => 'Change Language';
 
   @override

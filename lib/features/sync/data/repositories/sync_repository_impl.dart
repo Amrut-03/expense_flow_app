@@ -1,5 +1,6 @@
 import 'package:dartz/dartz.dart';
 import 'package:expense_flow_app/core/error/failures.dart';
+import 'package:expense_flow_app/core/logging/app_log_buffer.dart';
 import 'package:expense_flow_app/core/network/network_info.dart';
 import 'package:expense_flow_app/features/expense/data/datasources/remote/expense_remote_datasource.dart';
 import 'package:expense_flow_app/features/expense/data/models/expense_model.dart';
@@ -46,11 +47,12 @@ class SyncRepositoryImpl implements SyncRepository {
             ),
           );
         }
-      } catch (_) {
+      } catch (e, st) {
         // A single item must never abort the whole sync. Record the failure
         // on the item (`failed` keeps it in the next run's pending set) so it
         // is retried automatically on the next push instead of being lost.
         failures++;
+        AppLogBuffer.instance.captureError('sync.pushItem id=${model.id}', e, st);
         await localDataSource.updateExpense(
           model.copyWith(syncStatus: SyncStatus.failed.name),
         );

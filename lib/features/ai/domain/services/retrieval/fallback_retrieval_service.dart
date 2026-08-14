@@ -1,5 +1,4 @@
-import 'package:flutter/foundation.dart';
-
+import '../../../../../core/logging/app_log_buffer.dart';
 import '../../entities/retrieved_chunk.dart';
 import 'lexical_retrieval_service.dart';
 import 'retrieval_service.dart';
@@ -50,39 +49,20 @@ class FallbackRetrievalService implements RetrievalService {
         minScore: minScore,
       );
       if (results.isNotEmpty) {
-        if (kDebugMode) {
-          debugPrint(
-            '[Retrieval] "$query" -> vector path, '
-            '${results.length} result(s).',
-          );
-        }
         return results;
       }
-      if (kDebugMode) {
-        debugPrint(
-          '[Retrieval] "$query" -> vector path returned no results '
-          '(chunks may lack embeddings); falling back to lexical.',
-        );
-      }
     } catch (error, stackTrace) {
-      if (kDebugMode) {
-        debugPrint(
-          '[Retrieval] "$query" -> vector path FAILED: $error',
-        );
-        debugPrint('$stackTrace');
-      }
+      AppLogBuffer.instance.captureError(
+        'ai.retrieval.vector',
+        error,
+        stackTrace,
+      );
     }
 
-    final results = await fallback.retrieve(
+    return fallback.retrieve(
       query: query,
       topK: topK,
       minScore: minScore,
     );
-    if (kDebugMode) {
-      debugPrint(
-        '[Retrieval] "$query" -> lexical path, ${results.length} result(s).',
-      );
-    }
-    return results;
   }
 }

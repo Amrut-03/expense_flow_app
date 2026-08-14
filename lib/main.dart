@@ -1,4 +1,5 @@
 import 'package:expense_flow_app/core/di/injection_container.dart' as di;
+import 'package:expense_flow_app/core/logging/app_log_buffer.dart';
 import 'package:expense_flow_app/core/background/background_summary_refresh_service.dart';
 import 'package:expense_flow_app/core/notifications/budget_alert_watcher.dart';
 import 'package:expense_flow_app/core/notifications/local_notification_service.dart';
@@ -30,22 +31,19 @@ import 'features/settings/presentation/cubit/locale_cubit.dart';
 import 'l10n/app_localizations.dart';
 
 void main() {
-  runZonedGuarded(
-        () async {
+  AppLogBuffer.instance.start();
+  runZoned(
+    () async {
       WidgetsFlutterBinding.ensureInitialized();
 
       _installGlobalErrorHandlers();
-      debugPrint('[Boot] step1 handlers installed');
 
       await dotenv.load(fileName: ".env");
-      debugPrint('[Boot] step2 dotenv loaded');
       await Firebase.initializeApp(
         options: DefaultFirebaseOptions.currentPlatform,
       );
-      debugPrint('[Boot] step3 firebase initialized');
 
       await Hive.initFlutter();
-      debugPrint('[Boot] step4 hive init');
 
       Hive.registerAdapter(ExpenseModelAdapter());
       Hive.registerAdapter(BudgetModelAdapter());
@@ -60,15 +58,12 @@ void main() {
       await Hive.openBox<AppNotificationModel>('notifications_box');
       await Hive.openBox<dynamic>('notification_state_box');
       await Hive.openBox<dynamic>('notification_settings_box');
-      debugPrint('[Boot] step5 hive boxes opened');
 
       await di.initDependencyInjection();
-      debugPrint('[Boot] step6 di initialized');
-      debugPrint('[Boot] step6.1 DI returned, about to enter UI setup');
 
       final localNotifications = sl<LocalNotificationService>();
       await localNotifications.initialize(onTap: _handleNotificationTap);
-      debugPrint('[Boot] step7 local notifications initialized');
+
       unawaited(localNotifications.requestPermissions());
 
       unawaited(sl<NotificationScheduler>().scheduleAll());
@@ -76,15 +71,21 @@ void main() {
 
       unawaited(sl<BackgroundSummaryRefreshService>().refresh());
       unawaited(sl<FcmPushService>().initialize());
-      debugPrint('[Boot] step8 background services fired');
 
-      debugPrint('[Boot] step8.1 all pre-runApp setup done, calling runApp');
       runApp(const ExpenseFlowApp());
-      debugPrint('[Boot] step9 runApp returned');
     },
-        (error, stack) {
-      _reportUnhandledError(error, stack);
-    },
+    zoneSpecification: ZoneSpecification(
+      // Capture the console stream verbatim: every `print`/`debugPrint` line
+      // the terminal shows also lands in the log-report buffer exactly as-is,
+      // then still reaches the real console.
+      print: (self, parent, zone, line) {
+        AppLogBuffer.instance.captureConsoleLine(line);
+        parent.print(zone, line);
+      },
+      handleUncaughtError: (self, parent, zone, error, stackTrace) {
+        _reportUnhandledError(error, stackTrace);
+      },
+    ),
   );
 }
 
@@ -106,6 +107,8 @@ void _installGlobalErrorHandlers() {
 }
 
 void _reportUnhandledError(Object error, StackTrace? stack) {
+  // Console output only: the zone `print` hook mirrors it verbatim into the
+  // log report, so the report always carries the same detail as the terminal.
   debugPrint('[ExpenseFlow] Unhandled error: $error');
   if (stack != null) debugPrint(stack.toString());
 }

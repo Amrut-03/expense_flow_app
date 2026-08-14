@@ -1,6 +1,7 @@
 import 'package:dartz/dartz.dart';
 import '../../../../core/error/error_formatter.dart';
 import '../../../../core/error/failures.dart';
+import '../../../../core/logging/app_log_buffer.dart';
 import '../../../../core/network/network_info.dart';
 import '../../domain/entities/user_settings.dart';
 import '../../domain/repositories/user_settings_repository.dart';
@@ -34,6 +35,11 @@ class UserSettingsRepositoryImpl implements UserSettingsRepository {
       await remoteDataSource.push(settings);
       return const Right(null);
     } catch (e) {
+      AppLogBuffer.instance.captureError(
+        'settings.push',
+        e,
+        StackTrace.current,
+      );
       return Left(SyncFailure(friendlyError(e)));
     }
   }
@@ -60,7 +66,8 @@ class UserSettingsRepositoryImpl implements UserSettingsRepository {
       );
       await localDataSource.write(merged);
       return merged;
-    } catch (_) {
+    } catch (e, st) {
+      AppLogBuffer.instance.captureError('settings.pull', e, st);
       return null;
     }
   }

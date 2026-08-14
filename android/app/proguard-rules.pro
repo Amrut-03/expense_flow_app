@@ -15,3 +15,8 @@
 -dontwarn com.google.auto.value.extension.memoized.Memoized
 -dontwarn com.google.mediapipe.proto.CalculatorProfileProto$CalculatorProfile
 -dontwarn com.google.mediapipe.proto.GraphTemplateProto$CalculatorGraphTemplate
+
+# Consolidate all obfuscated (renamed) classes into a single default package
+# to reduce the number of class lookups and tighten obfuscation. Classes pinned
+# by -keep rules keep their original packages.
+-repackageclasses ''

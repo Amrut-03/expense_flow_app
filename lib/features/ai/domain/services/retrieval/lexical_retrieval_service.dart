@@ -1,7 +1,5 @@
 import 'dart:math' as math;
 
-import 'package:flutter/foundation.dart';
-
 import '../../entities/embedding_chunk.dart';
 import '../../entities/retrieved_chunk.dart';
 import '../../repositories/embedding_chunk_repository.dart';
@@ -116,13 +114,7 @@ class LexicalRetrievalService implements RetrievalService {
     // context to work with.
     final queryTokens = _tokens(query);
     if (queryTokens.isEmpty) {
-      if (kDebugMode) {
-        debugPrint(
-          '[LexicalRetrieval] "$query" carries no meaningful terms; '
-          'returning most-recent chunks.',
-        );
-      }
-      return _mostRecentWithLog(query, chunks, topK);
+      return _mostRecent(chunks, topK);
     }
 
     final idf = _computeIdf(chunks, queryTokens);
@@ -145,13 +137,7 @@ class LexicalRetrievalService implements RetrievalService {
     // still has the user's real information to answer from. A stricter
     // minScore filtering everything out is not treated as a miss.
     if (!anyTermMatch) {
-      if (kDebugMode) {
-        debugPrint(
-          '[LexicalRetrieval] "$query" matched NO chunk term; '
-          'returning most-recent chunks. Query tokens: $queryTokens',
-        );
-      }
-      return _mostRecentWithLog(query, chunks, topK);
+      return _mostRecent(chunks, topK);
     }
 
     scored.sort((a, b) {
@@ -163,41 +149,6 @@ class LexicalRetrievalService implements RetrievalService {
     final deduped = _removeDuplicates(scored);
 
     final results = deduped.length <= topK ? deduped : deduped.sublist(0, topK);
-
-    if (kDebugMode) {
-      debugPrint('[LexicalRetrieval] top results for "$query":');
-      for (var i = 0; i < results.length; i++) {
-        final r = results[i];
-        debugPrint(
-          '  ${i + 1}. id=${r.chunk.id} '
-          'sim=${r.similarity.toStringAsFixed(4)} '
-          '"${r.chunk.text}"',
-        );
-      }
-    }
-
-    return results;
-  }
-
-  /// Most-recent fallback that logs the returned chunk ids and scores.
-  List<RetrievedChunk> _mostRecentWithLog(
-    String query,
-    List<EmbeddingChunk> chunks,
-    int topK,
-  ) {
-    final results = _mostRecent(chunks, topK);
-
-    if (kDebugMode) {
-      debugPrint('[LexicalRetrieval] most-recent results for "$query":');
-      for (var i = 0; i < results.length; i++) {
-        final r = results[i];
-        debugPrint(
-          '  ${i + 1}. id=${r.chunk.id} '
-          'sim=${r.similarity.toStringAsFixed(4)} '
-          '"${r.chunk.text}"',
-        );
-      }
-    }
 
     return results;
   }

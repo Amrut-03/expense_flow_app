@@ -1,6 +1,7 @@
 import 'package:flutter_bloc/flutter_bloc.dart';
 
 import '../../../../core/error/error_formatter.dart';
+import '../../../../core/logging/app_log_buffer.dart';
 import '../../../../features/settings/domain/repositories/user_settings_repository.dart';
 import '../../domain/entities/app_currency.dart';
 import '../../domain/services/currency_converter.dart';
@@ -43,6 +44,11 @@ class CurrencyCubit extends Cubit<CurrencyState> {
       rates = ratesEntity.rates;
       _converter = createConverter(rates);
     } on Exception catch (e) {
+      AppLogBuffer.instance.captureError(
+        'currency.initializeRates',
+        e,
+        StackTrace.current,
+      );
       rateError = friendlyError(e);
     }
 
@@ -120,6 +126,11 @@ class CurrencyCubit extends Cubit<CurrencyState> {
       _converter = createConverter(ratesEntity.rates);
       emit(state.copyWith(rates: ratesEntity.rates, rateError: null));
     } on Exception catch (e) {
+      AppLogBuffer.instance.captureError(
+        'currency.ensureConverter',
+        e,
+        StackTrace.current,
+      );
       emit(state.copyWith(rateError: friendlyError(e)));
     }
   }

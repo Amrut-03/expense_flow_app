@@ -2,6 +2,7 @@ import 'package:dio/dio.dart';
 
 import '../../../../../core/error/error_formatter.dart';
 import '../../../../../core/error/exceptions.dart';
+import '../../../../../core/logging/app_log_buffer.dart';
 import '../../models/exchange_rate_model.dart';
 
 abstract class ExchangeRateRemoteDataSource {
@@ -29,8 +30,18 @@ class ExchangeRateRemoteDataSourceImpl implements ExchangeRateRemoteDataSource {
 
       return model;
     } on DioException catch (e) {
+      AppLogBuffer.instance.captureError(
+        'currency.remote.getRates',
+        e,
+        e.stackTrace,
+      );
       throw ServerException(friendlyError(e));
     } on Exception catch (e) {
+      AppLogBuffer.instance.captureError(
+        'currency.remote.getRates',
+        e,
+        StackTrace.current,
+      );
       throw ServerException(friendlyError(e));
     }
   }

@@ -68,6 +68,10 @@
   "settings_nameCannotBeEmpty": "Name cannot be empty",
   "settings_changeCurrency": "Change Currency",
   "settings_chooseCurrency": "Choose your preferred currency",
+  "settings_logReport": "Log report",
+  "settings_logReportGenerating": "Generating log report…",
+  "settings_logReportReady": "Log report ready",
+  "settings_logReportFailed": "Failed to create log report",
 
   "language_title": "Change Language",
   "language_choose": "Choose your preferred language",

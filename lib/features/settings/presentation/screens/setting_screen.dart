@@ -4,6 +4,10 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:go_router/go_router.dart';
+import 'package:share_plus/share_plus.dart';
+import 'dart:io';
+import '../../../../core/logging/app_log_buffer.dart';
+import '../../../../core/logging/log_pdf_generator.dart';
 import '../../../../core/theme/neumorphic_styles.dart';
 import '../../../../core/theme/theme_cubit.dart';
 import '../../../../core/utils/user_display_name.dart';
@@ -224,6 +228,16 @@ class _SettingScreenState extends State<SettingScreen> {
                       .fadeIn(duration: 260.ms, curve: Curves.easeOut)
                       .slideY(begin: 0.06, end: 0, curve: Curves.easeOutCubic),
                   SizedBox(height: 12.h),
+                  // SettingsTile(
+                  //       emoji: '📄',
+                  //       label: l10n.settings_logReport,
+                  //       trailing: const ValueChevron(value: 'PDF'),
+                  //       onTap: _createLogReport,
+                  //     )
+                  //     .animate(delay: 360.ms)
+                  //     .fadeIn(duration: 260.ms, curve: Curves.easeOut)
+                  //     .slideY(begin: 0.06, end: 0, curve: Curves.easeOutCubic),
+                  SizedBox(height: 12.h),
                   SettingsTile(
                         emoji: '🚪',
                         label: l10n.auth_logOut,
@@ -234,7 +248,7 @@ class _SettingScreenState extends State<SettingScreen> {
                         ),
                         onTap: _confirmSignOut,
                       )
-                      .animate(delay: 400.ms)
+                      .animate(delay: 440.ms)
                       .fadeIn(duration: 260.ms, curve: Curves.easeOut)
                       .slideY(begin: 0.06, end: 0, curve: Curves.easeOutCubic),
                   SizedBox(height: 24.h),
@@ -326,8 +340,96 @@ class _SettingScreenState extends State<SettingScreen> {
     context.read<AuthBloc>().add(UpdateProfileRequested(displayName: name));
   }
 
-  Future<void> _confirmSignOut() async {
+  /// Captures everything buffered since app start into a PDF and hands it to
+  /// the system share sheet so the user can save/send it as a bug report.
+  Future<void> _createLogReport() async {
     final palette = context.read<ThemeCubit>().state.palette;
+    final l10n = AppLocalizations.of(context);
+
+    showDialog<void>(
+      context: context,
+      barrierDismissible: false,
+      builder: (_) => Dialog(
+        backgroundColor: Colors.transparent,
+        elevation: 0,
+        child: Container(
+          padding: EdgeInsets.symmetric(horizontal: 20.w, vertical: 18.h),
+          decoration: NeuBox.raised(palette, radius: 20.r),
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              SizedBox(
+                width: 22.r,
+                height: 22.r,
+                child: CircularProgressIndicator(
+                  strokeWidth: 2.5,
+                  color: palette.accent,
+                ),
+              ),
+              SizedBox(width: 14.w),
+              Flexible(
+                child: Text(
+                  l10n.settings_logReportGenerating,
+                  style: AppTextStyles.manrope(
+                    fontSize: 14.sp,
+                    fontWeight: FontWeight.w600,
+                    color: palette.textDark,
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+
+    File? file;
+    try {
+      file = await LogPdfGenerator().generate();
+    } catch (e, st) {
+      AppLogBuffer.instance.captureError('settings.logReport.generate', e, st);
+      file = null;
+    }
+
+    if (!mounted) return;
+    Navigator.of(context, rootNavigator: true).pop();
+
+    if (file == null) {
+      NeuSnackBar.show(
+        context: context,
+        message: l10n.settings_logReportFailed,
+        type: NeuSnackBarType.error,
+      );
+      return;
+    }
+
+    try {
+      await SharePlus.instance.share(
+        ShareParams(
+          files: [XFile(file.path)],
+          text: 'ExpenseFlow log report',
+        ),
+      );
+      if (mounted) {
+        NeuSnackBar.show(
+          context: context,
+          message: l10n.settings_logReportReady,
+          type: NeuSnackBarType.success,
+        );
+      }
+    } catch (e, st) {
+      AppLogBuffer.instance.captureError('settings.logReport.share', e, st);
+      if (mounted) {
+        NeuSnackBar.show(
+          context: context,
+          message: l10n.settings_logReportFailed,
+          type: NeuSnackBarType.error,
+        );
+      }
+    }
+  }
+
+  Future<void> _confirmSignOut() async {    final palette = context.read<ThemeCubit>().state.palette;
     final l10n = AppLocalizations.of(context);
 
     final confirmed = await NeuBottomSheet.show<bool>(

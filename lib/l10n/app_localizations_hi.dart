@@ -203,6 +203,18 @@ class AppLocalizationsHi extends AppLocalizations {
   String get settings_chooseCurrency => 'अपनी पसंदीदा मुद्रा चुनें';
 
   @override
+  String get settings_logReport => 'लॉग रिपोर्ट';
+
+  @override
+  String get settings_logReportGenerating => 'लॉग रिपोर्ट तैयार की जा रही है…';
+
+  @override
+  String get settings_logReportReady => 'लॉग रिपोर्ट तैयार है';
+
+  @override
+  String get settings_logReportFailed => 'लॉग रिपोर्ट नहीं बनाई जा सकी';
+
+  @override
   String get language_title => 'भाषा बदलें';
 
   @override

@@ -2,6 +2,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'dart:async';
 import '../../../../core/error/error_formatter.dart';
 import '../../../../core/error/failures.dart';
+import '../../../../core/logging/app_log_buffer.dart';
 import '../../../ai/domain/usecases/embed_pending_chunks_usecase.dart';
 import '../../domain/entities/expense_entity.dart';
 import '../../domain/usecases/add_expense_usecase.dart';
@@ -87,6 +88,7 @@ class ExpenseBloc extends Bloc<ExpenseEvent, ExpenseState> {
 
       await _refreshAiChunks(added.id);
     } catch (e) {
+      AppLogBuffer.instance.captureError('expense.add', e, StackTrace.current);
       emit(ExpenseFailure(friendlyError(e)));
     }
   }
@@ -107,6 +109,7 @@ class ExpenseBloc extends Bloc<ExpenseEvent, ExpenseState> {
         ),
       );
     } catch (e) {
+      AppLogBuffer.instance.captureError('expense.load', e, StackTrace.current);
       emit(ExpenseFailure(friendlyError(e)));
     }
   }
@@ -131,6 +134,11 @@ class ExpenseBloc extends Bloc<ExpenseEvent, ExpenseState> {
 
       await _refreshAiChunks(event.expense.id);
     } catch (e) {
+      AppLogBuffer.instance.captureError(
+        'expense.update',
+        e,
+        StackTrace.current,
+      );
       emit(ExpenseFailure(friendlyError(e)));
     }
   }
@@ -155,6 +163,11 @@ class ExpenseBloc extends Bloc<ExpenseEvent, ExpenseState> {
 
       await _refreshAiChunks(event.expenseId);
     } catch (e) {
+      AppLogBuffer.instance.captureError(
+        'expense.delete',
+        e,
+        StackTrace.current,
+      );
       emit(ExpenseFailure(friendlyError(e)));
     }
   }
@@ -167,8 +180,12 @@ class ExpenseBloc extends Bloc<ExpenseEvent, ExpenseState> {
   Future<void> _refreshAiChunks(String expenseId) async {
     try {
       await regenerateAiChunksUseCase(expenseId);
-    } catch (_) {
-      // Index refresh is non-critical; ignore failures.
+    } catch (e, st) {
+      AppLogBuffer.instance.captureError(
+        'expense.refreshAiChunks',
+        e,
+        st,
+      );
     }
 
     unawaited(_embedPending());
@@ -177,8 +194,8 @@ class ExpenseBloc extends Bloc<ExpenseEvent, ExpenseState> {
   Future<void> _embedPending() async {
     try {
       await embedPendingChunksUseCase();
-    } catch (_) {
-      // Embedding is best-effort; retrieval falls back to lexical.
+    } catch (e, st) {
+      AppLogBuffer.instance.captureError('expense.embedPending', e, st);
     }
   }
 

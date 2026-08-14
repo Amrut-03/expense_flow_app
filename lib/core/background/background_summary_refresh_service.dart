@@ -1,7 +1,6 @@
-import 'package:flutter/foundation.dart';
-
 import '../../features/ai/domain/usecases/embed_pending_chunks_usecase.dart';
 import '../../features/expense/domain/usecases/summary_refresh/refresh_summaries_usecase.dart';
+import '../logging/app_log_buffer.dart';
 
 /// Runs the summary and embedding refresh outside the UI flow.
 ///
@@ -21,27 +20,22 @@ class BackgroundSummaryRefreshService {
   Future<void> refresh() async {
     try {
       await refreshSummariesUseCase();
-      if (kDebugMode) {
-        debugPrint('[ExpenseFlow] Summary refresh completed.');
-      }
     } catch (error, stackTrace) {
-      debugPrint('[ExpenseFlow] Summary refresh failed: $error');
-      debugPrint(stackTrace.toString());
+      AppLogBuffer.instance.captureError(
+        'background.summaryRefresh',
+        error,
+        stackTrace,
+      );
     }
 
     try {
-      final progress = await embedPendingChunks();
-      if (kDebugMode) {
-        debugPrint(
-          '[ExpenseFlow] Embedding pass completed: '
-          '${progress.succeeded} embedded, ${progress.failed} failed, '
-          '${progress.total} pending.'
-          '${progress.failed > 0 ? ' Failed ids: ${progress.failedChunkIds}' : ''}',
-        );
-      }
+      await embedPendingChunks();
     } catch (error, stackTrace) {
-      debugPrint('[ExpenseFlow] Embedding pending chunks failed: $error');
-      debugPrint(stackTrace.toString());
+      AppLogBuffer.instance.captureError(
+        'background.embedPending',
+        error,
+        stackTrace,
+      );
     }
   }
 }

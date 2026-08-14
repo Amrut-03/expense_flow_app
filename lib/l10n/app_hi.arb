@@ -179,5 +179,9 @@
   "transaction_highestAmount": "सबसे अधिक राशि",
   "transaction_lowestAmount": "सबसे कम राशि",
   "transaction_today": "आज",
-  "transaction_yesterday": "कल"
+  "transaction_yesterday": "कल",
+  "settings_logReport": "लॉग रिपोर्ट",
+  "settings_logReportGenerating": "लॉग रिपोर्ट तैयार की जा रही है…",
+  "settings_logReportReady": "लॉग रिपोर्ट तैयार है",
+  "settings_logReportFailed": "लॉग रिपोर्ट नहीं बनाई जा सकी"
 }
