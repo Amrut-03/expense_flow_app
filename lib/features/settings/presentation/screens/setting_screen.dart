@@ -228,16 +228,16 @@ class _SettingScreenState extends State<SettingScreen> {
                       .fadeIn(duration: 260.ms, curve: Curves.easeOut)
                       .slideY(begin: 0.06, end: 0, curve: Curves.easeOutCubic),
                   SizedBox(height: 12.h),
-                  SettingsTile(
-                        emoji: '📄',
-                        label: l10n.settings_logReport,
-                        trailing: const ValueChevron(value: 'PDF'),
-                        onTap: _createLogReport,
-                      )
-                      .animate(delay: 360.ms)
-                      .fadeIn(duration: 260.ms, curve: Curves.easeOut)
-                      .slideY(begin: 0.06, end: 0, curve: Curves.easeOutCubic),
-                  SizedBox(height: 12.h),
+                  // SettingsTile(
+                  //       emoji: '📄',
+                  //       label: l10n.settings_logReport,
+                  //       trailing: const ValueChevron(value: 'PDF'),
+                  //       onTap: _createLogReport,
+                  //     )
+                  //     .animate(delay: 360.ms)
+                  //     .fadeIn(duration: 260.ms, curve: Curves.easeOut)
+                  //     .slideY(begin: 0.06, end: 0, curve: Curves.easeOutCubic),
+                  // SizedBox(height: 12.h),
                   SettingsTile(
                         emoji: '🚪',
                         label: l10n.auth_logOut,
