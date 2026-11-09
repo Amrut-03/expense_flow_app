@@ -16,6 +16,14 @@
 -dontwarn com.google.mediapipe.proto.CalculatorProfileProto$CalculatorProfile
 -dontwarn com.google.mediapipe.proto.GraphTemplateProto$CalculatorGraphTemplate
 
+# ML Kit text recognition (receipt scanning). The plugin references the
+# optional Chinese/Devanagari/Japanese/Korean recognisers, but we only bundle
+# the Latin model, so those classes are intentionally absent.
+-dontwarn com.google.mlkit.vision.text.chinese.**
+-dontwarn com.google.mlkit.vision.text.devanagari.**
+-dontwarn com.google.mlkit.vision.text.japanese.**
+-dontwarn com.google.mlkit.vision.text.korean.**
+
 # Consolidate all obfuscated (renamed) classes into a single default package
 # to reduce the number of class lookups and tighten obfuscation. Classes pinned
 # by -keep rules keep their original packages.
