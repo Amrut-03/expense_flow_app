@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter_gemma/flutter_gemma.dart';
 import 'package:flutter_gemma_mediapipe/flutter_gemma_mediapipe.dart';
 import '../../domain/services/gemma/gemma_manager.dart';
@@ -17,6 +19,11 @@ class GemmaManagerImpl implements GemmaManager {
 
   InferenceModel? _model;
   bool _initialized = false;
+
+  /// Completes when the in-flight generation (if any) has finished. The
+  /// on-device engine runs one session at a time, so the chat and the
+  /// weekly digest must not generate concurrently.
+  Future<void> _generationLock = Future.value();
 
   @override
   Future<void> initialize() async {
@@ -53,6 +60,12 @@ class GemmaManagerImpl implements GemmaManager {
   }
 
   @override
+  Future<bool> hasActiveModel() async {
+    await _ensureInitialized();
+    return FlutterGemma.hasActiveModel();
+  }
+
+  @override
   Future<bool> isModelDownloaded({required String modelId}) async {
     await _ensureInitialized();
 
@@ -64,6 +77,45 @@ class GemmaManagerImpl implements GemmaManager {
     String prompt, {
     String? systemInstruction,
   }) async {
+    final previous = _generationLock;
+    final done = Completer<void>();
+    _generationLock = done.future;
+    void release() {
+      if (!done.isCompleted) done.complete();
+    }
+
+    await previous;
+    try {
+      final tokens = await _generate(prompt, systemInstruction);
+      late final StreamController<String> controller;
+      StreamSubscription<String>? sub;
+      controller = StreamController<String>(
+        onListen: () {
+          sub = tokens.listen(
+            controller.add,
+            onError: controller.addError,
+            onDone: () {
+              release();
+              controller.close();
+            },
+          );
+        },
+        onCancel: () async {
+          release();
+          await sub?.cancel();
+        },
+      );
+      return controller.stream;
+    } catch (_) {
+      release();
+      rethrow;
+    }
+  }
+
+  Future<Stream<String>> _generate(
+    String prompt,
+    String? systemInstruction,
+  ) async {
     if (!FlutterGemma.hasActiveModel()) {
       final defaultUrl = config.defaultModelUrl;
       if (defaultUrl == null) {

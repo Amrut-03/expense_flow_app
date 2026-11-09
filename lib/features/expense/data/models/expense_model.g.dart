@@ -29,6 +29,12 @@ class ExpenseModelAdapter extends TypeAdapter<ExpenseModel> {
       createdAt: fields[6] as DateTime,
       updatedAt: fields[7] as DateTime,
       lastSyncedAt: fields[14] as DateTime?,
+      merchant: fields[15] as String?,
+      originalAmount: fields[16] as double?,
+      exchangeRate: fields[17] as double?,
+      recurringId: fields[18] as String?,
+      taxTag: fields[19] as String?,
+      eventId: fields[20] as String?,
       version: fields[8] as int,
       syncStatus: fields[9] as String,
       isDeleted: fields[10] as bool,
@@ -38,7 +44,7 @@ class ExpenseModelAdapter extends TypeAdapter<ExpenseModel> {
   @override
   void write(BinaryWriter writer, ExpenseModel obj) {
     writer
-      ..writeByte(15)
+      ..writeByte(21)
       ..writeByte(0)
       ..write(obj.id)
       ..writeByte(1)
@@ -63,6 +69,18 @@ class ExpenseModelAdapter extends TypeAdapter<ExpenseModel> {
       ..write(obj.updatedAt)
       ..writeByte(14)
       ..write(obj.lastSyncedAt)
+      ..writeByte(15)
+      ..write(obj.merchant)
+      ..writeByte(16)
+      ..write(obj.originalAmount)
+      ..writeByte(17)
+      ..write(obj.exchangeRate)
+      ..writeByte(18)
+      ..write(obj.recurringId)
+      ..writeByte(19)
+      ..write(obj.taxTag)
+      ..writeByte(20)
+      ..write(obj.eventId)
       ..writeByte(8)
       ..write(obj.version)
       ..writeByte(9)

@@ -19,6 +19,8 @@ class NotificationSettingsLocalDataSourceImpl
   static const _dailyReminder = 'daily_reminder_enabled';
   static const _weeklySummary = 'weekly_summary_enabled';
   static const _monthlySummary = 'monthly_summary_enabled';
+  static const _billReminders = 'bill_reminders_enabled';
+  static const _captureAlerts = 'capture_alerts_enabled';
 
   final Box<dynamic> _box = Hive.box<dynamic>(_boxName);
 
@@ -33,6 +35,10 @@ class NotificationSettingsLocalDataSourceImpl
           _box.get(_weeklySummary, defaultValue: true) as bool? ?? true,
       monthlySummaryEnabled:
           _box.get(_monthlySummary, defaultValue: true) as bool? ?? true,
+      billRemindersEnabled:
+          _box.get(_billReminders, defaultValue: true) as bool? ?? true,
+      captureAlertsEnabled:
+          _box.get(_captureAlerts, defaultValue: true) as bool? ?? true,
     );
   }
 
@@ -42,5 +48,7 @@ class NotificationSettingsLocalDataSourceImpl
     await _box.put(_dailyReminder, settings.dailyReminderEnabled);
     await _box.put(_weeklySummary, settings.weeklySummaryEnabled);
     await _box.put(_monthlySummary, settings.monthlySummaryEnabled);
+    await _box.put(_billReminders, settings.billRemindersEnabled);
+    await _box.put(_captureAlerts, settings.captureAlertsEnabled);
   }
 }

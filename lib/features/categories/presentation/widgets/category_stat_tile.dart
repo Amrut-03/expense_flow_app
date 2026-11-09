@@ -15,6 +15,10 @@ class CategoryStatTile extends StatelessWidget {
   final VoidCallback? onTap;
   final String currencySymbol;
 
+  /// Optional status line under the bar (e.g. budget pace).
+  final String? subtitle;
+  final Color? subtitleColor;
+
   const CategoryStatTile({
     super.key,
     required this.emoji,
@@ -24,6 +28,8 @@ class CategoryStatTile extends StatelessWidget {
     required this.progressColor,
     this.onTap,
     required this.currencySymbol,
+    this.subtitle,
+    this.subtitleColor,
   });
 
   double get _percent => budget <= 0 ? 0 : (spent / budget).clamp(0.0, 1.0);
@@ -118,6 +124,17 @@ class CategoryStatTile extends StatelessWidget {
                 ),
               ],
             ),
+            if (subtitle != null) ...[
+              SizedBox(height: 6.h),
+              Text(
+                subtitle!,
+                style: AppTextStyles.manrope(
+                  fontSize: 12.sp,
+                  fontWeight: FontWeight.w600,
+                  color: subtitleColor ?? palette.textMuted,
+                ),
+              ),
+            ],
           ],
         ),
       ),

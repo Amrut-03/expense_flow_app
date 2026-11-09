@@ -42,6 +42,24 @@ class ExpenseModel extends HiveObject {
   @HiveField(14)
   final DateTime? lastSyncedAt;
 
+  @HiveField(15)
+  final String? merchant;
+
+  @HiveField(16)
+  final double? originalAmount;
+
+  @HiveField(17)
+  final double? exchangeRate;
+
+  @HiveField(18)
+  final String? recurringId;
+
+  @HiveField(19)
+  final String? taxTag;
+
+  @HiveField(20)
+  final String? eventId;
+
   @HiveField(8)
   final int version;
 
@@ -64,6 +82,12 @@ class ExpenseModel extends HiveObject {
     required this.createdAt,
     required this.updatedAt,
     this.lastSyncedAt,
+    this.merchant,
+    this.originalAmount,
+    this.exchangeRate,
+    this.recurringId,
+    this.taxTag,
+    this.eventId,
     this.version = 1,
     this.syncStatus = 'pending',
     this.isDeleted = false,
@@ -84,6 +108,12 @@ class ExpenseModel extends HiveObject {
       createdAt: entity.createdAt,
       updatedAt: entity.updatedAt,
       lastSyncedAt: entity.lastSyncedAt,
+      merchant: entity.merchant,
+      originalAmount: entity.originalAmount,
+      exchangeRate: entity.exchangeRate,
+      recurringId: entity.recurringId,
+      taxTag: entity.taxTag,
+      eventId: entity.eventId,
       version: entity.version,
       syncStatus: entity.syncStatus.name,
       isDeleted: entity.isDeleted,
@@ -107,6 +137,12 @@ class ExpenseModel extends HiveObject {
       lastSyncedAt: json['lastSyncedAt'] != null
           ? DateTime.parse(json['lastSyncedAt'] as String)
           : null,
+      merchant: json['merchant'] as String?,
+      originalAmount: (json['originalAmount'] as num?)?.toDouble(),
+      exchangeRate: (json['exchangeRate'] as num?)?.toDouble(),
+      recurringId: json['recurringId'] as String?,
+      taxTag: json['taxTag'] as String?,
+      eventId: json['eventId'] as String?,
       version: (json['version'] as num?)?.toInt() ?? 1,
       syncStatus: json['syncStatus'] as String? ?? 'pending',
       isDeleted: json['isDeleted'] as bool? ?? false,
@@ -128,6 +164,12 @@ class ExpenseModel extends HiveObject {
       'createdAt': createdAt.toIso8601String(),
       'updatedAt': updatedAt.toIso8601String(),
       'lastSyncedAt': lastSyncedAt?.toIso8601String(),
+      'merchant': merchant,
+      'originalAmount': originalAmount,
+      'exchangeRate': exchangeRate,
+      'recurringId': recurringId,
+      'taxTag': taxTag,
+      'eventId': eventId,
       'version': version,
       'syncStatus': syncStatus,
       'isDeleted': isDeleted,
@@ -149,6 +191,12 @@ class ExpenseModel extends HiveObject {
       createdAt: createdAt,
       updatedAt: updatedAt,
       lastSyncedAt: lastSyncedAt,
+      merchant: merchant,
+      originalAmount: originalAmount,
+      exchangeRate: exchangeRate,
+      recurringId: recurringId,
+      taxTag: taxTag,
+      eventId: eventId,
       version: version,
       syncStatus: SyncStatus.values.firstWhere(
         (e) => e.name == syncStatus,
@@ -171,6 +219,12 @@ class ExpenseModel extends HiveObject {
     DateTime? createdAt,
     DateTime? updatedAt,
     DateTime? lastSyncedAt,
+    String? merchant,
+    double? originalAmount,
+    double? exchangeRate,
+    String? recurringId,
+    String? taxTag,
+    String? eventId,
     int? version,
     String? syncStatus,
     bool? isDeleted,
@@ -188,6 +242,12 @@ class ExpenseModel extends HiveObject {
       createdAt: createdAt ?? this.createdAt,
       updatedAt: updatedAt ?? this.updatedAt,
       lastSyncedAt: lastSyncedAt ?? this.lastSyncedAt,
+      merchant: merchant ?? this.merchant,
+      originalAmount: originalAmount ?? this.originalAmount,
+      exchangeRate: exchangeRate ?? this.exchangeRate,
+      recurringId: recurringId ?? this.recurringId,
+      taxTag: taxTag ?? this.taxTag,
+      eventId: eventId ?? this.eventId,
       version: version ?? this.version,
       syncStatus: syncStatus ?? this.syncStatus,
       isDeleted: isDeleted ?? this.isDeleted,

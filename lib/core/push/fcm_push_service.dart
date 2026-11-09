@@ -1,6 +1,5 @@
 import 'package:firebase_auth/firebase_auth.dart' as fb;
 import 'package:firebase_messaging/firebase_messaging.dart';
-import 'package:hive_flutter/hive_flutter.dart';
 import 'package:uuid/uuid.dart';
 
 import '../../features/notifications/data/models/app_notification_model.dart';
@@ -12,6 +11,7 @@ import '../logging/app_log_buffer.dart';
 import '../notifications/local_notification_service.dart';
 import '../notifications/notification_payload.dart';
 import '../router/app_router.dart';
+import '../storage/secure_hive.dart';
 
 /// Top-level entry point for messages received while the app is terminated or
 /// in the background. Runs in a separate isolate, so it cannot rely on GetIt;
@@ -23,8 +23,8 @@ Future<void> firebaseMessagingBackgroundHandler(RemoteMessage message) async {
   if (notification == null) return;
 
   try {
-    await Hive.initFlutter();
-    final box = await Hive.openBox<AppNotificationModel>('notifications_box');
+    final box = await SecureHive.openNotificationsInBackground();
+    if (box == null) return;
     await box.put(
       notification.id,
       AppNotificationModel.fromEntity(notification),

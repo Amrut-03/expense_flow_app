@@ -1,51 +1,62 @@
 # ExpenseFlow
 
-**ExpenseFlow** is a beautiful, cross-platform expense-tracking application built with Flutter. It helps you track your daily expenses, manage budgets, and gain insights into your spending habits with a sleek neumorphic UI and AI-powered assistance.
-
-![ExpenseFlow Screenshot](screenshots/app_screenshot.png)
+**ExpenseFlow** is a private, offline-first expense tracker built with Flutter. Track daily spending, manage budgets and ask an on-device AI assistant about your money: your data stays encrypted on your phone and the AI never sends it to a server.
 
 ## Features
 
-- **Smart Expense Tracking** - Quickly add and categorize your daily expenses
-- **Budget Management** - Set budget limits and get notified when you're close to or exceeding them
-- **AI Assistant** - Chat with an AI assistant to understand your spending patterns
-- **Offline Support** - All data is stored locally using Hive for fast access and privacy
-- **Beautiful Neumorphic Design** - Modern, smooth UI with custom widgets
-- **Multi-language Support** - Available in English and Marathi (with more languages coming)
-- **Cross-Platform** - Runs on Android, iOS, Web, Windows, macOS, and Linux
-- **Local Notifications** - Reminders and budget alerts via local notifications
-- **Sync Capabilities** - Background sync to keep your data consistent across devices
+- **Smart Expense Tracking** - Add expenses in seconds with categories, merchant, payment method (Cash, Card, UPI, Bank Transfer) and notes
+- **Recurring Expenses** - Mark rent, EMIs or subscriptions as daily, weekly, monthly or yearly and they are logged automatically
+- **Voice Entry** - Say "चहा 20 रुपये" or "petrol 500 cash" in English, Hindi or Marathi; recognised on-device and parsed into the form
+- **Tax Tagging** - Tag 80C / 80D / HRA / 80G / 80E expenses and see a yearly deduction summary with statutory caps
+- **Statements & Export** - Monthly PDF statement and Excel-ready CSV export, generated on the phone
+- **Multi-currency** - Enter amounts in INR, USD, EUR or GBP; the original amount and exchange rate are kept with each expense
+- **Budget Management** - Monthly, quarterly or yearly limits per category, pace alerts, and rollover (carry forward or move unspent money into a savings goal)
+- **Receipt Scanning** - Photograph a bill; on-device OCR fills in the total, merchant, date, GST and line items
+- **Events & Trips** - Temporary budgets for Diwali, weddings or trips, with trip mode in the trip's own currency
+- **Envelope Budgeting** - Optional zero-based mode: give every rupee of income a job and move money between envelopes
+- **Shared Budgets & Splits** - Household, roommate or trip groups with a shared budget, equal/custom splits and settle-up suggestions
+- **Home Screen Widget** - "Safe to spend today" with one-tap quick add (Android and iOS)
+- **Year in Review** - A shareable, on-device "Wrapped" of your spending year
+- **On-device AI Assistant** - Chat about your spending with an LLM running locally, grounded in your own data via on-device embeddings (MiniLM + TensorFlow Lite) and a quantised vector index; answers include charts when useful
+- **Encrypted at Rest** - All local data is AES-256 encrypted, with the key held in the Android Keystore / iOS Keychain
+- **App Lock** - Optional fingerprint, face or device PIN lock
+- **Offline First + Cloud Sync** - Works fully offline; syncs to Cloud Firestore when connected, with conflict handling
+- **Notifications** - Budget alerts, AI-written weekly digest, bill/EMI reminders, logging reminders at your usual time, actionable "payment detected" notifications and push
+- **Multi-language** - English, Hindi and Marathi
+- **Neumorphic Design** - Custom soft-UI widgets with light and dark themes
 
 ## Tech Stack
 
-- **Framework:** [Flutter](https://flutter.dev/) (Stable channel)
+- **Framework:** [Flutter](https://flutter.dev/) (stable channel)
+- **Architecture:** Clean Architecture (data / domain / presentation per feature)
 - **State Management:** [flutter_bloc](https://pub.dev/packages/flutter_bloc)
-- **Local Storage:** [Hive](https://pub.dev/packages/hive) + [Hive Flutter](https://pub.dev/packages/hive_flutter)
-- **Networking:** [Dio](https://pub.dev/packages/dio) + [Connectivity Plus](https://pub.dev/packages/connectivity_plus)
-- **AI/ML:** [Google Gemma](https://pub.dev/packages/flutter_gemma) + [TensorFlow Lite](https://pub.dev/packages/tflite_flutter)
-- **Backend:** [Firebase](https://firebase.google.com/) (Core, Auth, Cloud Firestore, Messaging)
-- **Routing:** [Go Router](https://pub.dev/packages/go_router)
-- **Dependency Injection:** [GetIt](https://pub.dev/packages/get_it)
-- **Internationalization:** Flutter `intl` + [Flutter Gen](https://github.com/flutter/gen-l10n)
-- **UI:** [Flutter SVG](https://pub.dev/packages/flutter_svg), [Google Fonts](https://pub.dev/packages/google_fonts), [Lottie](https://pub.dev/packages/lottie) (optional), [flutter_animate](https://pub.dev/packages/flutter_animate)
+- **Dependency Injection:** [get_it](https://pub.dev/packages/get_it)
+- **Routing:** [go_router](https://pub.dev/packages/go_router)
+- **Local Storage:** [Hive](https://pub.dev/packages/hive) (AES-encrypted boxes) + [flutter_secure_storage](https://pub.dev/packages/flutter_secure_storage) for the key
+- **Security:** [local_auth](https://pub.dev/packages/local_auth) for app lock
+- **Backend:** [Firebase](https://firebase.google.com/) (Auth, Cloud Firestore, Cloud Messaging)
+- **Networking:** [Dio](https://pub.dev/packages/dio) + [connectivity_plus](https://pub.dev/packages/connectivity_plus)
+- **AI/ML:** [flutter_gemma](https://pub.dev/packages/flutter_gemma) + [tflite_flutter](https://pub.dev/packages/tflite_flutter)
+- **Charts:** [fl_chart](https://pub.dev/packages/fl_chart)
 - **Notifications:** [flutter_local_notifications](https://pub.dev/packages/flutter_local_notifications) + [timezone](https://pub.dev/packages/timezone)
-- **Charts:** [FL Chart](https://pub.dev/packages/fl_chart)
+- **UI:** [flutter_animate](https://pub.dev/packages/flutter_animate), [google_fonts](https://pub.dev/packages/google_fonts), [flutter_svg](https://pub.dev/packages/flutter_svg), [flutter_screenutil](https://pub.dev/packages/flutter_screenutil)
+- **Internationalization:** `flutter_localizations` + `intl` (gen-l10n)
+- **Testing:** `flutter_test` + [mocktail](https://pub.dev/packages/mocktail)
 
 ## Getting Started
 
 ### Prerequisites
 
-- [Flutter SDK](https://docs.flutter.dev/get-started/install) (>= 3.22.0)
-- [Dart SDK](https://dart.dev/get-dart) (>= 3.4.0)
-- Android Studio / VS Code (or your preferred IDE)
-- An Android or iOS emulator/device (for mobile testing)
+- [Flutter SDK](https://docs.flutter.dev/get-started/install), latest stable (Dart SDK `^3.12.2`, see `pubspec.yaml`)
+- Android Studio or Xcode, plus an emulator or device
+- A Firebase project
 
 ### Installation
 
 1. **Clone the repository:**
 
 ```bash
-git clone https://github.com/yourusername/expense_flow_app.git
+git clone https://github.com/Amrut-03/expense_flow_app.git
 cd expense_flow_app
 ```
 
@@ -55,22 +66,35 @@ cd expense_flow_app
 flutter pub get
 ```
 
-3. **Run code generation** (Hive adapters, JSON models, localization):
+3. **Create a `.env` file** in the project root (it is git-ignored and bundled as an asset). Keys read by the app:
 
-```bash
-flutter packages pub run build_runner build --delete-conflicting-outputs
+```env
+API_BASE_URL=
+GOOGLE_SERVER_CLIENT_ID=
+FIREBASE_PROJECT_ID=
+FIREBASE_MESSAGING_SENDER_ID=
+FIREBASE_STORAGE_BUCKET=
+FIREBASE_API_KEY_ANDROID=
+FIREBASE_APP_ID_ANDROID=
+FIREBASE_ANDROID_CLIENT_ID=
+FIREBASE_API_KEY_IOS=
+FIREBASE_APP_ID_IOS=
+FIREBASE_IOS_CLIENT_ID=
+FIREBASE_IOS_BUNDLE_ID=
 ```
 
-4. **Set up Firebase** (optional, for sync & push notifications):
-   - Create a Firebase project at [Firebase Console](https://console.firebase.google.com/)
-   - Add Android, iOS, and Web apps
-   - Download and place config files:
-     - Android: `android/app/google-services.json`
-     - iOS: `ios/Runner/GoogleService-Info.plist`
-     - Web: `web/firebase-config.js`
-   - Update `lib/firebase_options.dart` using `flutterfire configure`
+4. **Set up Firebase:**
+   - Run `flutterfire configure` to generate `lib/firebase_options.dart`
+   - Place `android/app/google-services.json` and `ios/Runner/GoogleService-Info.plist`
+   - Deploy the security rules: `firebase deploy --only firestore:rules`
 
-5. **Run the app:**
+5. **Run code generation** (Hive adapters, JSON models):
+
+```bash
+dart run build_runner build --delete-conflicting-outputs
+```
+
+6. **Run the app:**
 
 ```bash
 flutter run
@@ -80,47 +104,58 @@ flutter run
 
 ```
 lib/
-├── core/           # Core utilities, widgets, theme, networking, error handling
-├── features/       # Feature modules (auth, dashboard, expense, budget, ai, sync, categories)
-│   ├── auth/       # Authentication (sign-in, sign-up, Google sign-in)
-│   ├── dashboard/  # Dashboard with spending overview & charts
-│   ├── expense/    # Expense add/edit/list with local storage
-│   ├── budget/     # Budget limits & segmented budget management
-│   ├── ai/         # AI chat assistant powered by Google Gemma
-│   ├── sync/       # Background sync between local DB & Firestore
-│   └── categories/ # Expense category browsing
-├── l10n/           # Localization files (English, Marathi)
+├── core/              # DI, router, theme, shared widgets, networking, errors,
+│                      # notifications, push, logging, encrypted storage
+├── features/
+│   ├── ai/            # On-device AI assistant (Gemma, embeddings, retrieval, safety)
+│   ├── app_lock/      # Biometric / device-PIN app lock
+│   ├── auth/          # Email and Google sign-in
+│   ├── budget/        # Budget limits and sync
+│   ├── categories/    # Per-category transaction views
+│   ├── currency/      # Currency selection and exchange rates
+│   ├── dashboard/     # Spending overview and charts
+│   ├── expense/       # Add / edit / view expenses
+│   ├── notifications/ # Inbox, settings, FCM tokens
+│   ├── onboarding/    # First-run walkthrough
+│   ├── recurring/     # Recurring expense rules and generation
+│   ├── settings/      # User settings, language, theme
+│   ├── splash/        # Launch routing
+│   └── sync/          # Local <-> Firestore sync
+├── l10n/              # ARB files and generated localizations (en, hi, mr)
 ├── firebase_options.dart
-└── main.dart       # App entry point
+└── main.dart          # App entry point
 ```
+
+Each feature follows Clean Architecture: `data/` (models, datasources, repository implementations), `domain/` (entities, repository contracts, use cases) and `presentation/` (blocs/cubits, screens, widgets).
 
 ## Key Components
 
-### Local Storage (Hive)
-Expenses and budgets are stored locally using [Hive](https://pub.dev/packages/hive), ensuring fast access and offline support.
+### Encrypted Local Storage
+Every Hive box is opened with AES-256 encryption at startup by `SecureHive` (`lib/core/storage/`). The key is generated once and stored in the platform keystore. Existing plaintext data from older versions is migrated automatically on first launch.
 
-### AI Integration
-The AI assistant in the chat screen uses [Google Gemma](https://pub.dev/packages/flutter_gemma) running locally on-device, allowing for privacy-conscious conversational expense analysis.
+### AI Assistant
+The chat assistant runs Google Gemma on-device. Expenses, budgets and summaries are turned into text chunks, embedded with MiniLM (TensorFlow Lite) and retrieved by similarity to ground answers in your own data. A rule-based safety policy declines investment, tax, loan and medical advice. See [`docs/AI_ARCHITECTURE.md`](docs/AI_ARCHITECTURE.md).
 
-### Notifications
-[flutter_local_notifications](https://pub.dev/packages/flutter_local_notifications) is used to schedule reminders and budget alerts, with timezone awareness via the [timezone](https://pub.dev/packages/timezone) plugin.
+### Recurring Expenses
+Recurring rules are stored locally. On each launch, any occurrences that fell due are created as normal expenses (with deterministic ids so re-runs never duplicate) and then synced.
 
 ### Sync Engine
-The app includes a background sync service that monitors connectivity changes and synchronizes local changes with [Cloud Firestore](https://firebase.google.com/docs/firestore), ensuring data consistency across devices.
+Local changes are marked pending and pushed to Cloud Firestore; remote changes are pulled and merged, with version-based conflict detection.
+
+### Notifications
+Local notifications handle budget alerts and scheduled summaries; Firebase Cloud Messaging delivers server-sent pushes.
 
 ## Testing
-
-Run unit and widget tests:
 
 ```bash
 flutter test
 ```
 
-Run integration tests (if available):
+Unit tests cover domain logic (validation, recurrence date math, recurring generation, budget alerts, AI safety and similarity), the app lock cubit, model serialization and the encrypted-storage migration.
 
-```bash
-flutter drive --target=test_driver/app.dart
-```
+## Roadmap
+
+See [`docs/FEATURE_ROADMAP.md`](docs/FEATURE_ROADMAP.md).
 
 ## Contributing
 

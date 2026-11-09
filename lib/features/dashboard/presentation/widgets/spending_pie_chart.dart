@@ -54,13 +54,10 @@ class SpendingPieChart extends StatelessWidget {
           centerSpaceRadius: 48,
           startDegreeOffset: -90,
           sections: visible.map((slice) {
-            final index = ExpenseCategories.all.indexWhere(
-              (c) => c.id == slice.category.id,
+            final color = ExpenseCategories.colorFor(
+              palette,
+              slice.category.id,
             );
-            final color =
-                index >= 0 && index < palette.categoryColors.length
-                    ? palette.categoryColors[index]
-                    : palette.accent;
             final percentage = (slice.amount / total * 100).clamp(0, 100);
             return PieChartSectionData(
               value: slice.amount,

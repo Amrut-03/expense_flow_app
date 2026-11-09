@@ -20,9 +20,8 @@ import 'retrieval_service.dart';
 ///  2. a recency boost: recently updated chunks rank slightly ahead of
 ///     older ones at equal relevance.
 ///
-/// Registered as the fallback of [FallbackRetrievalService]: it is only used
-/// when the embedding backend is unavailable, trading away semantic recall in
-/// exchange for not requiring a working embedding model.
+/// The keyword half of [HybridRetrievalService]; also used alone when the
+/// embedding backend is unavailable.
 class LexicalRetrievalService implements RetrievalService {
   LexicalRetrievalService({required this.chunkRepository});
 
@@ -90,6 +89,27 @@ class LexicalRetrievalService implements RetrievalService {
     required String query,
     int topK = RetrievalService.defaultTopK,
     double minScore = 0.0,
+  }) => _retrieve(query: query, topK: topK, minScore: minScore);
+
+  /// Like [retrieve], but returns an empty list instead of the most recent
+  /// chunks when nothing matches the query. Used by hybrid retrieval, where
+  /// recency filler would drown out the vector ranking.
+  Future<List<RetrievedChunk>> retrieveMatches({
+    required String query,
+    int topK = RetrievalService.defaultTopK,
+    double minScore = 0.0,
+  }) => _retrieve(
+    query: query,
+    topK: topK,
+    minScore: minScore,
+    recentFallback: false,
+  );
+
+  Future<List<RetrievedChunk>> _retrieve({
+    required String query,
+    required int topK,
+    required double minScore,
+    bool recentFallback = true,
   }) async {
     if (topK < 1) {
       throw ArgumentError.value(
@@ -114,7 +134,7 @@ class LexicalRetrievalService implements RetrievalService {
     // context to work with.
     final queryTokens = _tokens(query);
     if (queryTokens.isEmpty) {
-      return _mostRecent(chunks, topK);
+      return recentFallback ? _mostRecent(chunks, topK) : const [];
     }
 
     final idf = _computeIdf(chunks, queryTokens);
@@ -137,7 +157,7 @@ class LexicalRetrievalService implements RetrievalService {
     // still has the user's real information to answer from. A stricter
     // minScore filtering everything out is not treated as a miss.
     if (!anyTermMatch) {
-      return _mostRecent(chunks, topK);
+      return recentFallback ? _mostRecent(chunks, topK) : const [];
     }
 
     scored.sort((a, b) {

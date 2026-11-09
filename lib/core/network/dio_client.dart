@@ -36,11 +36,7 @@ class DioClient {
                 options.headers['Authorization'] = 'Bearer $token';
               }
             } catch (e, st) {
-              AppLogBuffer.instance.captureError(
-                'dio.authToken',
-                e,
-                st,
-              );
+              AppLogBuffer.instance.captureError('dio.authToken', e, st);
               // Requests must proceed even if auth token lookup fails; the
               // backend will reject unauthenticated calls on its own.
             }

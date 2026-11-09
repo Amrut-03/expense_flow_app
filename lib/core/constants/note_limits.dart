@@ -8,4 +8,7 @@ abstract final class NoteLimits {
 
   /// Maximum number of characters allowed for an expense title.
   static const int titleMaxLength = 80;
+
+  /// Maximum number of characters allowed for a merchant name.
+  static const int merchantMaxLength = 60;
 }

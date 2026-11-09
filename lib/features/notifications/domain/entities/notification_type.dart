@@ -19,6 +19,12 @@ enum NotificationType {
   /// Tier 3 — AI/insight notifications.
   insight('insight', '💡', '/notifications'),
 
+  /// A recurring bill, rent or EMI falls due tomorrow.
+  billReminder('bill_reminder', '🧾', '/recurring'),
+
+  /// A payment was detected from a bank SMS and awaits review.
+  transactionCaptured('transaction_captured', '💸', '/captures'),
+
   /// Data sync / backup status.
   sync('sync', '🔄', '/notifications'),
 

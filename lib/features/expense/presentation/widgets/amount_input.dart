@@ -10,7 +10,10 @@ import '../../../currency/presentation/cubit/currency_state.dart';
 class AmountInput extends StatefulWidget {
   final TextEditingController controller;
 
-  const AmountInput({super.key, required this.controller});
+  /// Overrides the display-currency symbol (e.g. a trip's `THB`).
+  final String? currencyLabel;
+
+  const AmountInput({super.key, required this.controller, this.currencyLabel});
 
   @override
   State<AmountInput> createState() => _AmountInputState();
@@ -74,7 +77,9 @@ class _AmountInputState extends State<AmountInput> {
                         fontWeight: FontWeight.w600,
                         color: palette.textDark.withValues(alpha: .5),
                       ),
-                      child: Text(state.selected.symbol),
+                      child: Text(
+                        widget.currencyLabel ?? state.selected.symbol,
+                      ),
                     ),
                   ),
                 );

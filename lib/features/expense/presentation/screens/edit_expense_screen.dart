@@ -21,6 +21,13 @@ import '../bloc/expense_bloc.dart';
 import '../bloc/expense_event.dart';
 import '../bloc/expense_state.dart';
 
+import '../../../../core/di/injection_container.dart';
+import '../../../events/domain/entities/spending_event.dart';
+import '../../../events/domain/repositories/spending_event_repository.dart';
+import '../../../events/presentation/widgets/event_tag_picker.dart';
+import '../../../tax/domain/entities/tax_section.dart';
+import '../../../tax/presentation/widgets/tax_tag_picker.dart';
+
 class EditTransactionScreen extends StatefulWidget {
   final ExpenseEntity expense;
 
@@ -33,9 +40,19 @@ class EditTransactionScreen extends StatefulWidget {
 class _EditTransactionScreenState extends State<EditTransactionScreen> {
   late final TextEditingController _amountController;
   late final TextEditingController _titleController;
+  late final TextEditingController _merchantController;
   late final TextEditingController _noteController;
-  late int _selectedCategoryIndex;
+  late String _selectedCategoryId;
   late String? _paymentMethod;
+  late TaxSection? _taxTag;
+  late String? _eventId;
+
+  /// Events offered in the picker: everything not yet ended, plus the one
+  /// this expense already belongs to.
+  late final List<SpendingEvent> _events = [
+    for (final e in sl<SpendingEventRepository>().getAll())
+      if (!e.hasEndedBy(DateTime.now()) || e.id == widget.expense.eventId) e,
+  ];
   bool _isSaving = false;
   bool _isDeleting = false;
 
@@ -43,31 +60,49 @@ class _EditTransactionScreenState extends State<EditTransactionScreen> {
   void initState() {
     super.initState();
 
-    final categories = ExpenseCategories.all;
-
-    final categoryIndex = categories.indexWhere(
-      (category) => category.id == widget.expense.categoryId,
-    );
-
-    _selectedCategoryIndex = categoryIndex == -1 ? 0 : categoryIndex;
+    _selectedCategoryId = widget.expense.categoryId;
     _paymentMethod = widget.expense.paymentMethod;
+    _taxTag = TaxSection.fromCode(widget.expense.taxTag);
+    _eventId = widget.expense.eventId;
     _amountController = TextEditingController(text: _initialAmount());
     _titleController = TextEditingController(text: widget.expense.title ?? '');
+    _merchantController = TextEditingController(
+      text: widget.expense.merchant ?? '',
+    );
     _noteController = TextEditingController(text: widget.expense.note ?? '');
   }
 
-  String _initialAmount() {
-    final converted = context.read<CurrencyCubit>().convertFromInr(
-      widget.expense.amount,
-    );
+  /// Currency the amount is edited in: a trip expense paid abroad keeps its
+  /// own currency (when a rate is known); everything else uses the display
+  /// currency.
+  String _editCurrency(CurrencyCubit cubit) {
+    final e = widget.expense;
+    if (e.eventId != null &&
+        e.isForeignCurrency &&
+        cubit.rateToInr(e.currency) != null) {
+      return e.currency;
+    }
+    return cubit.state.selected.code;
+  }
 
-    return converted.toStringAsFixed(2);
+  String _initialAmount() {
+    final cubit = context.read<CurrencyCubit>();
+    final original = widget.expense.originalAmount;
+
+    // Show exactly what was entered when the edit currency still matches
+    // the currency it was paid in; otherwise convert from INR.
+    if (original != null && widget.expense.currency == _editCurrency(cubit)) {
+      return original.toStringAsFixed(2);
+    }
+
+    return cubit.convertFromInr(widget.expense.amount).toStringAsFixed(2);
   }
 
   @override
   void dispose() {
     _amountController.dispose();
     _titleController.dispose();
+    _merchantController.dispose();
     _noteController.dispose();
     super.dispose();
   }
@@ -95,22 +130,45 @@ class _EditTransactionScreenState extends State<EditTransactionScreen> {
     }
 
     final currencyCubit = context.read<CurrencyCubit>();
-    final category = ExpenseCategories.all[_selectedCategoryIndex];
 
-    final amountInInr = double.parse(
-      currencyCubit
-          .convertToInr(
-            amount: amount,
-            fromCurrency: currencyCubit.state.selected.code,
-          )
-          .toStringAsFixed(2),
-    );
+    final currencyCode = _editCurrency(currencyCubit);
+    final isDisplayCurrency = currencyCode == currencyCubit.state.selected.code;
+    final previousOriginal = widget.expense.originalAmount;
+
+    // Re-converting an untouched amount at today's rate would silently
+    // change its INR value, so keep the recorded figures in that case.
+    final amountUnchanged =
+        previousOriginal != null &&
+        widget.expense.currency == currencyCode &&
+        (amount - previousOriginal).abs() < 0.005;
+
+    final amountInInr = amountUnchanged
+        ? widget.expense.amount
+        : double.parse(
+            (isDisplayCurrency
+                    ? currencyCubit.convertToInr(
+                        amount: amount,
+                        fromCurrency: currencyCode,
+                      )
+                    : amount * currencyCubit.rateToInr(currencyCode)!)
+                .toStringAsFixed(2),
+          );
+
+    final merchant = _merchantController.text.trim();
 
     final updated = ExpenseEntity(
       id: widget.expense.id,
       amount: amountInInr,
-      currency: currencyCubit.state.selected.code,
-      categoryId: category.id,
+      currency: currencyCode,
+      originalAmount: amountUnchanged ? previousOriginal : amount,
+      exchangeRate: amountUnchanged
+          ? widget.expense.exchangeRate
+          : currencyCubit.rateToInr(currencyCode),
+      merchant: merchant.isEmpty ? null : merchant,
+      recurringId: widget.expense.recurringId,
+      taxTag: _taxTag?.code,
+      eventId: _eventId,
+      categoryId: _selectedCategoryId,
       note: _noteController.text.trim().isEmpty
           ? null
           : _noteController.text.trim(),
@@ -185,7 +243,15 @@ class _EditTransactionScreenState extends State<EditTransactionScreen> {
       },
       builder: (context, state) {
         final loading = state is ExpenseLoading;
-        final categories = ExpenseCategories.all;
+        // Keep the expense's own category selectable even if it is no
+        // longer in the picker (e.g. an archived custom category).
+        final categories = [
+          ...ExpenseCategories.all,
+          if (!ExpenseCategories.all.any(
+            (c) => c.id == widget.expense.categoryId,
+          ))
+            ExpenseCategories.byId(widget.expense.categoryId),
+        ];
         final l10n = AppLocalizations.of(context);
 
         return Scaffold(
@@ -216,7 +282,10 @@ class _EditTransactionScreenState extends State<EditTransactionScreen> {
                     child: Row(
                       children: [
                         Text(
-                          currencyCubit.state.selected.symbol,
+                          _editCurrency(currencyCubit) ==
+                                  currencyCubit.state.selected.code
+                              ? currencyCubit.state.selected.symbol
+                              : _editCurrency(currencyCubit),
                           style: AppTextStyles.manrope(
                             fontSize: 26.sp,
                             color: palette.textMuted,
@@ -285,6 +354,46 @@ class _EditTransactionScreenState extends State<EditTransactionScreen> {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(
+                        l10n.addExpense_merchantLabel,
+                        style: AppTextStyles.manrope(
+                          fontSize: 14.sp,
+                          color: palette.textMuted,
+                          fontWeight: FontWeight.w500,
+                        ),
+                      ),
+                      SizedBox(height: 10.h),
+                      Container(
+                        width: double.infinity,
+                        padding: EdgeInsets.all(16.r),
+                        decoration: NeuBox.inset(palette, radius: 16.r),
+                        child: TextField(
+                          controller: _merchantController,
+                          maxLength: NoteLimits.merchantMaxLength,
+                          style: AppTextStyles.manrope(
+                            fontSize: 15.sp,
+                            color: palette.textDark,
+                            fontWeight: FontWeight.w500,
+                          ),
+                          decoration: InputDecoration(
+                            border: InputBorder.none,
+                            isDense: true,
+                            counterText: '',
+                            hintText: l10n.addExpense_merchantHint,
+                            hintStyle: AppTextStyles.manrope(
+                              fontSize: 14.sp,
+                              color: palette.textMuted,
+                            ),
+                            contentPadding: EdgeInsets.zero,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                  SizedBox(height: 20.h),
+                  Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
                         l10n.addExpense_categoryLabel,
                         style: AppTextStyles.manrope(
                           fontSize: 14.sp,
@@ -305,9 +414,10 @@ class _EditTransactionScreenState extends State<EditTransactionScreen> {
                             _categoryChip(
                               palette,
                               categories[index],
-                              _selectedCategoryIndex == index,
+                              _selectedCategoryId == categories[index].id,
                               () => setState(
-                                () => _selectedCategoryIndex = index,
+                                () =>
+                                    _selectedCategoryId = categories[index].id,
                               ),
                             ),
                         ],
@@ -337,6 +447,25 @@ class _EditTransactionScreenState extends State<EditTransactionScreen> {
                       ),
                     ],
                   ),
+                  SizedBox(height: 20.h),
+                  TaxTagPicker(
+                    selected: _taxTag,
+                    enabled: !_isSaving,
+                    labelColor: palette.textMuted,
+                    labelWeight: FontWeight.w500,
+                    onChanged: (section) => setState(() => _taxTag = section),
+                  ),
+                  if (_events.isNotEmpty) ...[
+                    SizedBox(height: 20.h),
+                    EventTagPicker(
+                      events: _events,
+                      selected: _events
+                          .where((e) => e.id == _eventId)
+                          .firstOrNull,
+                      enabled: !_isSaving,
+                      onChanged: (e) => setState(() => _eventId = e?.id),
+                    ),
+                  ],
                   SizedBox(height: 20.h),
                   Column(
                     crossAxisAlignment: CrossAxisAlignment.start,

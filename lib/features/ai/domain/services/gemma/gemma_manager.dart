@@ -16,6 +16,10 @@ abstract interface class GemmaManager {
     void Function(int progress)? onProgress,
   });
 
+  /// Whether a model is installed and active, i.e. [generateResponse] can
+  /// run without first downloading one.
+  Future<bool> hasActiveModel();
+
   /// Returns whether the model identified by [modelId] is installed.
   Future<bool> isModelDownloaded({required String modelId});
 
@@ -25,6 +29,9 @@ abstract interface class GemmaManager {
   /// message so the model treats it as authoritative context (for example
   /// "answer only from the data below"). The stream completes when
   /// generation finishes.
+  ///
+  /// Calls are serialised: a second call waits until the previous response
+  /// stream has finished or been cancelled.
   Future<Stream<String>> generateResponse(
     String prompt, {
     String? systemInstruction,

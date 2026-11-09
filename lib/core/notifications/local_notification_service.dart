@@ -14,6 +14,14 @@ abstract final class NotificationChannels {
   static const String general = 'general';
 }
 
+/// An action button on a notification.
+class NotificationAction {
+  final String id;
+  final String label;
+
+  const NotificationAction(this.id, this.label);
+}
+
 /// Thin wrapper around `flutter_local_notifications`.
 ///
 /// Owns initialisation (channels, timezone, tap routing) and exposes a small,
@@ -28,9 +36,10 @@ class LocalNotificationService {
   bool get isInitialized => _initialized;
 
   /// Initialises the plugin, creates channels, sets the local timezone and
-  /// wires tap handling. [onTap] receives the notification payload.
+  /// wires tap handling. [onTap] receives the notification payload and,
+  /// when an action button was pressed, its id.
   Future<void> initialize({
-    required void Function(String? payload) onTap,
+    required void Function(String? payload, String? actionId) onTap,
   }) async {
     if (_initialized) return;
     _initialized = true;
@@ -48,7 +57,8 @@ class LocalNotificationService {
 
     await _plugin.initialize(
       settings: settings,
-      onDidReceiveNotificationResponse: (response) => onTap(response.payload),
+      onDidReceiveNotificationResponse: (response) =>
+          onTap(response.payload, response.actionId),
     );
 
     await _createChannels();
@@ -56,7 +66,8 @@ class LocalNotificationService {
     // App launched from a notification while terminated.
     final launchDetails = await _plugin.getNotificationAppLaunchDetails();
     if (launchDetails?.didNotificationLaunchApp == true) {
-      onTap(launchDetails?.notificationResponse?.payload);
+      final response = launchDetails?.notificationResponse;
+      onTap(response?.payload, response?.actionId);
     }
   }
 
@@ -78,18 +89,35 @@ class LocalNotificationService {
     }
   }
 
+  /// [actions] adds Android action buttons; their ids arrive in the tap
+  /// callback's `actionId`.
   Future<void> show({
     required int id,
     required String title,
     required String body,
     required String channelId,
     String? payload,
+    List<NotificationAction> actions = const [],
   }) async {
     await _plugin.show(
       id: id,
       title: title,
       body: body,
-      notificationDetails: _details(channelId),
+      notificationDetails: _details(
+        channelId,
+        body: body,
+        actions: [
+          for (final a in actions)
+            AndroidNotificationAction(
+              a.id,
+              a.label,
+              // Handle the action in the running app (main isolate) so it
+              // can use the same repositories and blocs as the UI.
+              showsUserInterface: true,
+              cancelNotification: true,
+            ),
+        ],
+      ),
       payload: payload,
     );
   }
@@ -107,7 +135,7 @@ class LocalNotificationService {
       title: title,
       body: body,
       scheduledDate: date,
-      notificationDetails: _details(channelId),
+      notificationDetails: _details(channelId, body: body),
       androidScheduleMode: AndroidScheduleMode.inexactAllowWhileIdle,
       payload: payload,
     );
@@ -140,7 +168,7 @@ class LocalNotificationService {
       title: title,
       body: body,
       scheduledDate: scheduled,
-      notificationDetails: _details(channelId),
+      notificationDetails: _details(channelId, body: body),
       androidScheduleMode: AndroidScheduleMode.inexactAllowWhileIdle,
       matchDateTimeComponents: DateTimeComponents.time,
       payload: payload,
@@ -206,7 +234,11 @@ class LocalNotificationService {
     );
   }
 
-  NotificationDetails _details(String channelId) {
+  NotificationDetails _details(
+    String channelId, {
+    String? body,
+    List<AndroidNotificationAction>? actions,
+  }) {
     final importance = channelId == NotificationChannels.budgetAlerts
         ? Importance.high
         : Importance.defaultImportance;
@@ -222,6 +254,9 @@ class LocalNotificationService {
         icon: 'ic_notification',
         importance: importance,
         priority: priority,
+        // Digests and reminders run to several lines; let them expand.
+        styleInformation: body == null ? null : BigTextStyleInformation(body),
+        actions: actions,
       ),
       iOS: const DarwinNotificationDetails(),
     );

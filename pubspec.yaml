@@ -72,6 +72,12 @@ dependencies:
   flutter_timezone: ^5.1.0
   pdf: ^3.11.3
   share_plus: ^12.0.1
+  flutter_secure_storage: ^10.3.4
+  local_auth: ^3.0.2
+  speech_to_text: ^7.5.0
+  home_widget: ^0.10.0
+  google_mlkit_text_recognition: ^1.0.1
+  image_picker: ^1.2.4
 dev_dependencies:
   flutter_test:
     sdk: flutter
@@ -107,6 +113,8 @@ flutter:
   assets:
     - .env
     - assets/models/minilm/
+    # Noto Sans (+ Devanagari) for PDF statements; SIL OFL, see OFL.txt.
+    - assets/fonts/
 
   # An image asset can refer to one or more resolution-specific "variants", see
   # https://flutter.dev/to/resolution-aware-images

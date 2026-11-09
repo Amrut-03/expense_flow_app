@@ -5,14 +5,25 @@ import 'ai_safety_policy.dart';
 /// Rule-based [AiSafetyPolicy] that rejects investment, tax, loan, and
 /// medical advice.
 ///
-/// Matching is simple, case-insensitive keyword containment. A hit immediately
-/// returns a rejected verdict carrying a canned template response; questions
-/// that match nothing are allowed to proceed.
+/// Matching is case-insensitive and whole-word, with common English suffixes
+/// allowed (`loan` matches `loans`, `invest` matches `investing`) so everyday
+/// spending words such as `taxi` or `premium` are not mistaken for `tax` or
+/// `emi`. A hit immediately returns a rejected verdict carrying a canned
+/// template response; questions that match nothing are allowed to proceed.
 class RuleBasedAiSafetyPolicy implements AiSafetyPolicy {
   RuleBasedAiSafetyPolicy({Map<UnsafeTopic, List<String>>? keywords})
-    : _keywords = keywords ?? _defaultKeywords;
+    : _patterns = {
+        for (final entry in (keywords ?? _defaultKeywords).entries)
+          entry.key: [for (final keyword in entry.value) _wordPattern(keyword)],
+      };
 
-  final Map<UnsafeTopic, List<String>> _keywords;
+  final Map<UnsafeTopic, List<RegExp>> _patterns;
+
+  static RegExp _wordPattern(String keyword) {
+    return RegExp(
+      '\\b${RegExp.escape(keyword.toLowerCase())}(?:s|es|ed|ing|ments?)?\\b',
+    );
+  }
 
   static final Map<UnsafeTopic, List<String>> _defaultKeywords = {
     UnsafeTopic.investment: const [
@@ -81,7 +92,8 @@ class RuleBasedAiSafetyPolicy implements AiSafetyPolicy {
         'track and categorise your spending instead.',
     UnsafeTopic.tax:
         'I can\'t give tax advice. For tax filing, please '
-        'consult a tax professional.',
+        'consult a tax professional. Your tagged deductions are summarised '
+        'under Settings → Tax deductions.',
     UnsafeTopic.loan:
         'I can\'t give loan or borrowing advice. Please consult '
         'a financial professional.',
@@ -95,8 +107,8 @@ class RuleBasedAiSafetyPolicy implements AiSafetyPolicy {
     final normalized = question.toLowerCase();
 
     for (final topic in UnsafeTopic.values) {
-      for (final keyword in _keywords[topic] ?? const <String>[]) {
-        if (normalized.contains(keyword)) {
+      for (final pattern in _patterns[topic] ?? const <RegExp>[]) {
+        if (pattern.hasMatch(normalized)) {
           return SafetyVerdict.rejected(
             topic: topic,
             template: defaultTemplates[topic]!,

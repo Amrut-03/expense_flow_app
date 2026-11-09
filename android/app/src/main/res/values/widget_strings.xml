@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="widget_description">Safe to spend today, with quick add</string>
+    <string name="widget_safe_title">Safe to spend today</string>
+    <string name="widget_spent_title">Spent today</string>
+    <string name="widget_spent_today">Spent today: %1$s</string>
+    <string name="widget_no_budget">Set a budget to see what\'s safe to spend</string>
+    <string name="widget_open_app">Open ExpenseFlow to refresh</string>
+    <string name="widget_locked_title">ExpenseFlow is locked</string>
+    <string name="widget_add">Add expense</string>
+</resources>

@@ -1,3 +1,6 @@
+import '../constants/expense_category.dart';
+import '../../l10n/app_localizations.dart';
+import 'package:flutter/widgets.dart' show Locale;
 import 'package:expense_flow_app/features/auth/data/datasources/auth_datasource_impl.dart';
 import 'package:expense_flow_app/features/auth/data/repositories/auth_repository_impl.dart';
 import 'package:expense_flow_app/features/auth/domain/repositories/auth_repository.dart';
@@ -84,7 +87,7 @@ import '../../features/ai/domain/services/retrieval/top_k_retriever.dart';
 import '../../features/ai/domain/services/retrieval/retrieval_service.dart';
 import '../../features/ai/domain/services/retrieval/lexical_retrieval_service.dart';
 import '../../features/ai/domain/services/retrieval/vector_retrieval_service.dart';
-import '../../features/ai/domain/services/retrieval/fallback_retrieval_service.dart';
+import '../../features/ai/domain/services/retrieval/hybrid_retrieval_service.dart';
 import '../../features/ai/presentation/bloc/chat_bloc.dart';
 import '../../features/ai/domain/services/gemma/gemma_manager.dart';
 import '../../features/ai/data/gemma/gemma_manager_impl.dart';
@@ -142,6 +145,87 @@ import '../../features/notifications/domain/usecases/update_notification_setting
 import '../../features/notifications/presentation/bloc/notifications_cubit.dart';
 import '../../features/notifications/presentation/bloc/notification_settings_cubit.dart';
 import '../push/fcm_push_service.dart';
+import '../../features/ai/data/device/device_info_capability.dart';
+import '../../features/ai/domain/services/answer/answer_strategy.dart';
+import '../../features/ai/domain/services/answer/device_capability.dart';
+import '../storage/hive_boxes.dart';
+import '../../features/budget/domain/usecases/get_budget_insights_usecase.dart';
+import '../../features/budget/presentation/bloc/budget_insights_cubit.dart';
+import '../../features/categories/data/datasources/category_remote_datasource.dart';
+import '../../features/categories/data/repositories/category_repository_impl.dart';
+import '../../features/categories/domain/repositories/category_repository.dart';
+import '../../features/categories/domain/usecases/custom_category_usecases.dart';
+import '../../features/ai/domain/services/retrieval/vector_index_cache.dart';
+import '../../features/budget/data/repositories/envelope_repository_impl.dart';
+import '../../features/budget/domain/repositories/envelope_repository.dart';
+import '../../features/ai/domain/usecases/build_answer_chart_usecase.dart';
+import '../../features/home_widget/data/home_widget_sync.dart';
+import '../../features/receipt_scan/data/mlkit_receipt_recognizer.dart';
+import '../../features/receipt_scan/domain/services/receipt_recognizer.dart';
+import '../../features/receipt_scan/domain/usecases/scan_receipt_usecase.dart';
+import '../../features/budget/domain/services/budget_expense_filter.dart';
+import '../utils/merge_streams.dart';
+import '../../features/budget/domain/usecases/envelope_usecases.dart';
+import '../../features/budget/presentation/bloc/envelope_cubit.dart';
+import '../../features/events/data/repositories/spending_event_repository_impl.dart';
+import '../../features/groups/data/firestore_group_repository.dart';
+import '../../features/groups/domain/repositories/group_repository.dart';
+import '../../features/groups/domain/usecases/group_usecases.dart';
+import '../../features/groups/presentation/cubit/group_detail_cubit.dart';
+import '../../features/groups/presentation/cubit/groups_cubit.dart';
+import '../../features/events/domain/repositories/spending_event_repository.dart';
+import '../../features/events/domain/services/separate_event_budget_filter.dart';
+import '../../features/events/domain/usecases/spending_event_usecases.dart';
+import '../../features/events/presentation/cubit/spending_events_cubit.dart';
+import '../../features/goals/data/repositories/savings_goal_repository_impl.dart';
+import '../../features/goals/domain/repositories/savings_goal_repository.dart';
+import '../../features/goals/domain/usecases/savings_goal_usecases.dart';
+import '../../features/goals/presentation/cubit/savings_goals_cubit.dart';
+import '../../features/sms_capture/data/datasources/method_channel_sms_inbox.dart';
+import '../../features/tax/domain/usecases/get_tax_summary_usecase.dart';
+import '../../features/voice_entry/data/gemma_voice_expense_refiner.dart';
+import '../../features/voice_entry/data/speech_to_text_recognizer.dart';
+import '../../features/voice_entry/domain/services/speech_recognizer.dart';
+import '../../features/voice_entry/domain/usecases/parse_voice_expense_usecase.dart';
+import '../../features/voice_entry/presentation/cubit/voice_entry_cubit.dart';
+import '../../features/reports/data/report_file_repository_impl.dart';
+import '../../features/reports/domain/repositories/report_file_repository.dart';
+import '../../features/reports/domain/usecases/export_usecases.dart';
+import '../../features/reports/presentation/cubit/reports_cubit.dart';
+import '../../features/budget/data/repositories/budget_rollover_repository_impl.dart';
+import '../../features/budget/domain/repositories/budget_rollover_repository.dart';
+import '../../features/budget/domain/usecases/settle_budget_rollover_usecase.dart';
+import '../../features/budget/presentation/bloc/budget_rollover_cubit.dart';
+import '../../features/tax/presentation/cubit/tax_summary_cubit.dart';
+import '../../features/sms_capture/data/repositories/sms_capture_repository_impl.dart';
+import '../../features/sms_capture/domain/repositories/sms_capture_repository.dart';
+import '../../features/sms_capture/domain/usecases/sms_capture_usecases.dart';
+import '../../features/sms_capture/presentation/cubit/sms_capture_cubit.dart';
+import '../../features/sms_capture/presentation/capture_notification_action_handler.dart';
+import '../../features/sms_capture/domain/entities/captured_transaction.dart';
+import '../notifications/capture_notification_service.dart';
+import '../../features/subscriptions/domain/usecases/subscription_usecases.dart';
+import '../../features/subscriptions/presentation/cubit/subscriptions_cubit.dart';
+import '../../features/ai/domain/services/chunk_generators/savings_goal_chunk_generator.dart';
+import '../../features/ai/domain/services/chunk_generators/subscription_chunk_generator.dart';
+import '../../features/expense/domain/usecases/summary_refresh/savings_goal_summary_refresher.dart';
+import '../../features/expense/domain/usecases/summary_refresh/subscription_summary_refresher.dart';
+import 'package:local_auth/local_auth.dart';
+import '../../features/app_lock/data/repositories/app_lock_repository_impl.dart';
+import '../../features/app_lock/domain/repositories/app_lock_repository.dart';
+import '../../features/app_lock/presentation/cubit/app_lock_cubit.dart';
+import '../../features/recurring/data/datasources/recurring_expense_local_datasource.dart';
+import '../../features/recurring/data/models/recurring_expense_model.dart';
+import '../../features/recurring/data/repositories/recurring_expense_repository_impl.dart';
+import '../../features/recurring/domain/repositories/recurring_expense_repository.dart';
+import '../../features/recurring/domain/usecases/generate_due_recurring_expenses_usecase.dart';
+import '../../features/recurring/domain/usecases/manage_recurring_expenses_usecases.dart';
+import '../../features/recurring/domain/usecases/start_recurring_expense_usecase.dart';
+import '../../features/recurring/presentation/cubit/recurring_expenses_cubit.dart';
+import '../../features/insights/data/weekly_digest_data.dart';
+import '../../features/insights/domain/usecases/answer_affordability_usecase.dart';
+import '../../features/insights/domain/usecases/weekly_digest_usecase.dart';
+import '../notifications/weekly_digest_service.dart';
 
 final sl = GetIt.instance;
 
@@ -149,7 +233,7 @@ Future<void> initDependencyInjection() async {
   sl.registerLazySingleton(() => fb.FirebaseAuth.instance);
   sl.registerLazySingleton<FirebaseFirestore>(() => FirebaseFirestore.instance);
 
-  final expenseBox = Hive.box<ExpenseModel>('expense_box');
+  final expenseBox = Hive.box<ExpenseModel>(HiveBoxes.expenses);
 
   sl.registerLazySingleton<Box<ExpenseModel>>(() => expenseBox);
 
@@ -194,20 +278,22 @@ Future<void> initDependencyInjection() async {
   sl.registerLazySingleton(() => Connectivity());
   sl.registerLazySingleton<NetworkInfo>(() => NetworkInfoImpl(sl()));
   sl.registerLazySingleton(() => Dio());
-  sl.registerLazySingleton(() => DioClient(
-    sl(),
-    baseUrl: dotenv.env['API_BASE_URL'] ?? '',
-    authTokenProvider: () async {
-      final user = sl<fb.FirebaseAuth>().currentUser;
-      if (user == null) return null;
-      try {
-        return await user.getIdToken();
-      } catch (e, st) {
-        AppLogBuffer.instance.captureError('dio.authToken.di', e, st);
-        return null;
-      }
-    },
-  ));
+  sl.registerLazySingleton(
+    () => DioClient(
+      sl(),
+      baseUrl: dotenv.env['API_BASE_URL'] ?? '',
+      authTokenProvider: () async {
+        final user = sl<fb.FirebaseAuth>().currentUser;
+        if (user == null) return null;
+        try {
+          return await user.getIdToken();
+        } catch (e, st) {
+          AppLogBuffer.instance.captureError('dio.authToken.di', e, st);
+          return null;
+        }
+      },
+    ),
+  );
 
   // Expense DIs
   sl.registerLazySingleton<ExpenseLocalDataSource>(
@@ -226,9 +312,312 @@ Future<void> initDependencyInjection() async {
 
   sl.registerLazySingleton(() => DeleteExpenseUseCase(sl<ExpenseRepository>()));
 
+  // Recurring expense DIs
+  sl.registerLazySingleton<Box<RecurringExpenseModel>>(
+    () => Hive.box<RecurringExpenseModel>(HiveBoxes.recurringExpenses),
+  );
+  sl.registerLazySingleton<RecurringExpenseLocalDataSource>(
+    () => RecurringExpenseLocalDataSourceImpl(sl<Box<RecurringExpenseModel>>()),
+  );
+  sl.registerLazySingleton<RecurringExpenseRepository>(
+    () => RecurringExpenseRepositoryImpl(sl()),
+  );
+  sl.registerLazySingleton(
+    () => StartRecurringExpenseUseCase(
+      repository: sl(),
+      addExpense: sl<AddExpenseUseCase>(),
+    ),
+  );
+  sl.registerLazySingleton(
+    () => GenerateDueRecurringExpensesUseCase(
+      repository: sl(),
+      addExpense: sl<AddExpenseUseCase>(),
+    ),
+  );
+  sl.registerLazySingleton(() => GetRecurringExpensesUseCase(sl()));
+  sl.registerLazySingleton(() => WatchRecurringExpensesUseCase(sl()));
+  sl.registerLazySingleton(() => SetRecurringExpenseActiveUseCase(sl()));
+  sl.registerLazySingleton(() => DeleteRecurringExpenseUseCase(sl()));
+  sl.registerFactory(
+    () => RecurringExpensesCubit(
+      getRules: sl(),
+      watchRules: sl(),
+      setActiveRule: sl(),
+      deleteRule: sl(),
+    ),
+  );
+
+  // App lock DIs
+  sl.registerLazySingleton(() => LocalAuthentication());
+  sl.registerLazySingleton<AppLockRepository>(
+    () => AppLockRepositoryImpl(
+      auth: sl(),
+      settingsBox: Hive.box<dynamic>(HiveBoxes.settings),
+    ),
+  );
+  sl.registerFactory(() => AppLockCubit(sl()));
+
+  // Custom categories
+  sl.registerLazySingleton<CategoryRepository>(
+    () => CategoryRepositoryImpl(
+      box: Hive.box<dynamic>(HiveBoxes.customCategories),
+      remote: CategoryRemoteDataSourceImpl(
+        firestore: sl<FirebaseFirestore>(),
+        getUid: () => sl<fb.FirebaseAuth>().currentUser?.uid,
+      ),
+    ),
+  );
+  sl.registerLazySingleton(() => CreateCustomCategoryUseCase(sl()));
+  sl.registerLazySingleton(() => UpdateCustomCategoryUseCase(sl()));
+  sl.registerLazySingleton(() => ArchiveCustomCategoryUseCase(sl()));
+
+  // Tax deductions (80C / 80D / HRA / 80G / 80E)
+  sl.registerLazySingleton(() => GetTaxSummaryUseCase(sl<ExpenseRepository>()));
+  sl.registerFactory(() => TaxSummaryCubit(sl<GetTaxSummaryUseCase>()));
+
+  // Reports (monthly PDF statement, CSV export)
+  sl.registerLazySingleton<ReportFileRepository>(
+    () => ReportFileRepositoryImpl(),
+  );
+  sl.registerLazySingleton(
+    () => GetMonthlyStatementUseCase(sl<ExpenseRepository>()),
+  );
+  sl.registerLazySingleton(
+    () => ExportStatementPdfUseCase(
+      getStatement: sl<GetMonthlyStatementUseCase>(),
+      files: sl<ReportFileRepository>(),
+    ),
+  );
+  sl.registerLazySingleton(
+    () => ExportExpensesCsvUseCase(
+      repository: sl<ExpenseRepository>(),
+      files: sl<ReportFileRepository>(),
+    ),
+  );
+  sl.registerLazySingleton(
+    () => ExportTaxSummaryCsvUseCase(sl<ReportFileRepository>()),
+  );
+  sl.registerFactory(
+    () => ReportsCubit(
+      getStatement: sl<GetMonthlyStatementUseCase>(),
+      exportPdf: sl<ExportStatementPdfUseCase>(),
+      exportCsv: sl<ExportExpensesCsvUseCase>(),
+    ),
+  );
+
+  // Budget rollover (carry forward / move to a savings goal)
+  sl.registerLazySingleton<BudgetRolloverRepository>(
+    () => BudgetRolloverRepositoryImpl(Hive.box<dynamic>(HiveBoxes.settings)),
+  );
+  sl.registerLazySingleton(
+    () => SetBudgetRolloverUseCase(
+      rolloverRepository: sl<BudgetRolloverRepository>(),
+      budgetRepository: sl<BudgetRepository>(),
+    ),
+  );
+  sl.registerFactory(
+    () => BudgetRolloverCubit(
+      repository: sl<BudgetRolloverRepository>(),
+      setRollover: sl<SetBudgetRolloverUseCase>(),
+      getGoals: sl<GetSavingsGoalsUseCase>(),
+    ),
+  );
+  sl.registerLazySingleton(
+    () => SettleBudgetRolloverUseCase(
+      rolloverRepository: sl<BudgetRolloverRepository>(),
+      budgetFilter: sl<BudgetExpenseFilter>(),
+      budgetRepository: sl<BudgetRepository>(),
+      expenseRepository: sl<ExpenseRepository>(),
+      addContribution: sl<AddGoalContributionUseCase>(),
+    ),
+  );
+
+  // Envelope (zero-based) budgeting
+  sl.registerLazySingleton<EnvelopeRepository>(
+    () => EnvelopeRepositoryImpl(Hive.box<dynamic>(HiveBoxes.settings)),
+  );
+  sl.registerLazySingleton(() => EnvelopeAdjustments(sl()));
+  sl.registerLazySingleton(
+    () => GetEnvelopeMonthUseCase(
+      repository: sl(),
+      budgetRepository: sl<BudgetRepository>(),
+      expenseRepository: sl<ExpenseRepository>(),
+      budgetFilter: sl<BudgetExpenseFilter>(),
+    ),
+  );
+  sl.registerLazySingleton(() => MoveEnvelopeMoneyUseCase(sl()));
+  sl.registerFactory(
+    () => EnvelopeCubit(
+      repository: sl(),
+      getMonth: sl(),
+      move: sl(),
+      changes: [
+        sl<EnvelopeRepository>().watch(),
+        sl<Box<ExpenseModel>>().watch().map((_) {}),
+      ],
+    ),
+  );
+
+  // Budget insights (pace + safe to spend)
+  sl.registerLazySingleton(
+    () => GetBudgetInsightsUseCase(
+      expenseRepository: sl<ExpenseRepository>(),
+      budgetRepository: sl<BudgetRepository>(),
+      recurringRepository: sl<RecurringExpenseRepository>(),
+      rolloverRepository: sl<BudgetRolloverRepository>(),
+      budgetFilter: sl<BudgetExpenseFilter>(),
+      envelopes: sl<EnvelopeAdjustments>(),
+    ),
+  );
+  sl.registerFactory(
+    () => BudgetInsightsCubit(
+      sl<GetBudgetInsightsUseCase>(),
+      // Recurring rules, events (separate budgets) and envelope moves all
+      // change the numbers.
+      changes: mergeStreams([
+        sl<RecurringExpenseRepository>().watch(),
+        sl<SpendingEventRepository>().watch(),
+        sl<EnvelopeRepository>().watch(),
+      ]),
+    ),
+  );
+
+  // Subscriptions
+  sl.registerLazySingleton(
+    () => DetectSubscriptionsUseCase(
+      expenseRepository: sl<ExpenseRepository>(),
+      recurringRepository: sl<RecurringExpenseRepository>(),
+    ),
+  );
+  sl.registerLazySingleton(() => TrackSubscriptionUseCase(sl()));
+  sl.registerFactory(() => SubscriptionsCubit(detect: sl(), track: sl()));
+
+  sl.registerLazySingleton(HomeWidgetSync.new);
+  sl.registerLazySingleton<ReceiptRecognizer>(MlKitReceiptRecognizer.new);
+  sl.registerLazySingleton(() => ScanReceiptUseCase(sl()));
+
+  // Shared groups (P3 3.2): Firestore-backed, multi-user.
+  sl.registerLazySingleton<GroupRepository>(
+    () => FirestoreGroupRepository(
+      firestore: sl<FirebaseFirestore>(),
+      getUid: () => sl<fb.FirebaseAuth>().currentUser?.uid,
+      displayName: () {
+        final user = sl<fb.FirebaseAuth>().currentUser;
+        final name = user?.displayName?.trim();
+        if (name != null && name.isNotEmpty) return name;
+        final email = user?.email;
+        return email == null ? 'Member' : email.split('@').first;
+      },
+    ),
+  );
+  sl.registerLazySingleton(
+    () => AddGroupExpenseUseCase(
+      sl<GroupRepository>(),
+      addPersonalExpense: sl<AddExpenseUseCase>(),
+    ),
+  );
+  sl.registerLazySingleton(
+    () => RecordSettlementUseCase(sl<GroupRepository>()),
+  );
+  sl.registerLazySingleton(() => LeaveGroupUseCase(sl<GroupRepository>()));
+  sl.registerFactory(() => GroupsCubit(sl<GroupRepository>()));
+  sl.registerFactoryParam<GroupDetailCubit, String, void>(
+    (groupId, _) => GroupDetailCubit(
+      groupId: groupId,
+      repository: sl<GroupRepository>(),
+      addExpenseUseCase: sl<AddGroupExpenseUseCase>(),
+      recordSettlement: sl<RecordSettlementUseCase>(),
+      leaveGroup: sl<LeaveGroupUseCase>(),
+    ),
+  );
+
+  // Events & trips (temporary budgets spanning categories)
+  sl.registerLazySingleton<SpendingEventRepository>(
+    () => SpendingEventRepositoryImpl(
+      Hive.box<dynamic>(HiveBoxes.spendingEvents),
+    ),
+  );
+  sl.registerLazySingleton<BudgetExpenseFilter>(
+    () => SeparateEventBudgetFilter(sl<SpendingEventRepository>()),
+  );
+  sl.registerLazySingleton(() => SaveSpendingEventUseCase(sl()));
+  sl.registerLazySingleton(
+    () => DeleteSpendingEventUseCase(sl(), sl<ExpenseRepository>()),
+  );
+  sl.registerLazySingleton(
+    () => GetEventProgressUseCase(sl(), sl<ExpenseRepository>()),
+  );
+  sl.registerFactory(
+    () => SpendingEventsCubit(
+      getProgress: sl(),
+      save: sl(),
+      delete: sl(),
+      repository: sl<SpendingEventRepository>(),
+      changes: [
+        sl<SpendingEventRepository>().watch(),
+        sl<Box<ExpenseModel>>().watch().map((_) {}),
+      ],
+    ),
+  );
+
+  // Savings goals
+  sl.registerLazySingleton<SavingsGoalRepository>(
+    () => SavingsGoalRepositoryImpl(Hive.box<dynamic>(HiveBoxes.savingsGoals)),
+  );
+  sl.registerLazySingleton(() => GetSavingsGoalsUseCase(sl()));
+  sl.registerLazySingleton(() => CreateSavingsGoalUseCase(sl()));
+  sl.registerLazySingleton(() => AddGoalContributionUseCase(sl()));
+  sl.registerLazySingleton(() => DeleteSavingsGoalUseCase(sl()));
+  sl.registerFactory(
+    () => SavingsGoalsCubit(
+      getGoals: sl(),
+      createGoal: sl(),
+      addContribution: sl(),
+      deleteGoal: sl(),
+      changes: sl<SavingsGoalRepository>().watch(),
+    ),
+  );
+
+  // SMS auto-capture
+  sl.registerLazySingleton<SmsInbox>(() => MethodChannelSmsInbox());
+  sl.registerLazySingleton<SmsCaptureRepository>(
+    () => SmsCaptureRepositoryImpl(
+      box: Hive.box<dynamic>(HiveBoxes.capturedTransactions),
+      settingsBox: Hive.box<dynamic>(HiveBoxes.settings),
+    ),
+  );
+  sl.registerLazySingleton(
+    () => ScanSmsForTransactionsUseCase(
+      inbox: sl(),
+      repository: sl(),
+      expenseRepository: sl<ExpenseRepository>(),
+      // Resolved lazily: notification services are registered later.
+      notifier: _LazyCaptureNotifier(),
+    ),
+  );
+  sl.registerLazySingleton(
+    () => CaptureNotificationActionHandler(sl<SmsCaptureRepository>()),
+  );
+  sl.registerLazySingleton(
+    () => SetSmsCaptureEnabledUseCase(inbox: sl(), repository: sl()),
+  );
+  sl.registerLazySingleton(() => GetPendingCapturesUseCase(sl()));
+  sl.registerLazySingleton(() => ResolveCaptureUseCase(sl()));
+  sl.registerFactory(
+    () => SmsCaptureCubit(
+      inbox: sl(),
+      repository: sl(),
+      scan: sl(),
+      setEnabled: sl(),
+      getPending: sl(),
+      resolve: sl(),
+    ),
+  );
+
   sl.registerFactory(
     () => ExpenseBloc(
       addExpenseUseCase: sl(),
+      startRecurringExpenseUseCase: sl(),
       getExpensesUseCase: sl(),
       updateExpenseUseCase: sl(),
       deleteExpenseUseCase: sl(),
@@ -241,7 +630,7 @@ Future<void> initDependencyInjection() async {
   );
 
   // AI chunk generation DIs
-  final aiEmbeddingsBox = Hive.box<EmbeddingChunkModel>('ai_embeddings_box');
+  final aiEmbeddingsBox = Hive.box<EmbeddingChunkModel>(HiveBoxes.aiEmbeddings);
   sl.registerLazySingleton<Box<EmbeddingChunkModel>>(() => aiEmbeddingsBox);
 
   sl.registerLazySingleton<EmbeddingChunkLocalDataSource>(
@@ -321,6 +710,14 @@ Future<void> initDependencyInjection() async {
         sl<TransactionSummaryRefresher>(),
         sl<WeeklySummaryRefresher>(),
         sl<CategorySummaryRefresher>(),
+        SubscriptionSummaryRefresher(
+          detect: sl<DetectSubscriptionsUseCase>(),
+          generator: SubscriptionChunkGenerator(),
+        ),
+        SavingsGoalSummaryRefresher(
+          repository: sl<SavingsGoalRepository>(),
+          generator: SavingsGoalChunkGenerator(),
+        ),
       ],
     ),
   );
@@ -428,7 +825,7 @@ Future<void> initDependencyInjection() async {
   sl.registerLazySingleton(() => PullUserSettingsUseCase(sl()));
 
   // Budget DIs
-  final budgetBox = Hive.box<BudgetModel>('budget_box');
+  final budgetBox = Hive.box<BudgetModel>(HiveBoxes.budgets);
   sl.registerLazySingleton<Box<BudgetModel>>(() => budgetBox);
 
   sl.registerLazySingleton<BudgetLocalDataSource>(
@@ -531,15 +928,15 @@ Future<void> initDependencyInjection() async {
     () => TopKRetriever(chunkRepository: sl<EmbeddingChunkRepository>()),
   );
 
-  // Retrieval is primary semantic (vector) with a lexical fallback: the
-  // MiniLM model asset may not be bundled yet, and the fallback keeps the
-  // chat pipeline functional (and the embedding failure invisible) until it
-  // is. Once the model is bundled this wiring needs no change.
+  // Retrieval fuses semantic (vector) and keyword (lexical) rankings. If the
+  // MiniLM model is unavailable the lexical side carries on alone, so the
+  // chat pipeline keeps working and the embedding failure stays invisible.
   sl.registerLazySingleton<VectorRetrievalService>(
     () => VectorRetrievalService(
       embeddingRepository: sl<EmbeddingRepository>(),
       topKRetriever: sl<TopKRetriever>(),
       chunkRepository: sl<EmbeddingChunkRepository>(),
+      indexCache: VectorIndexCache(),
     ),
   );
 
@@ -550,9 +947,9 @@ Future<void> initDependencyInjection() async {
   );
 
   sl.registerLazySingleton<RetrievalService>(
-    () => FallbackRetrievalService(
-      primary: sl<VectorRetrievalService>(),
-      fallback: sl<LexicalRetrievalService>(),
+    () => HybridRetrievalService(
+      vector: sl<VectorRetrievalService>(),
+      lexical: sl<LexicalRetrievalService>(),
     ),
   );
 
@@ -572,12 +969,37 @@ Future<void> initDependencyInjection() async {
 
   sl.registerLazySingleton<AiSafetyPolicy>(() => RuleBasedAiSafetyPolicy());
 
+  sl.registerLazySingleton<DeviceCapability>(() => DeviceInfoCapability());
+  sl.registerLazySingleton<AnswerStrategy>(
+    () => AdaptiveAnswerStrategy(
+      primary: GemmaAnswerStrategy(
+        promptBuilder: sl<ChatPromptBuilder>(),
+        gemma: sl<GemmaManager>(),
+      ),
+      fallback: const TemplateAnswerStrategy(),
+      device: sl<DeviceCapability>(),
+      onFallback: (reason) => AppLogBuffer.instance.captureError(
+        'ai.liteMode',
+        reason,
+        StackTrace.current,
+      ),
+    ),
+  );
+
+  sl.registerLazySingleton(
+    () => AnswerAffordabilityUseCase(
+      insights: sl<GetBudgetInsightsUseCase>(),
+      expenseRepository: sl<ExpenseRepository>(),
+      goalRepository: sl<SavingsGoalRepository>(),
+    ),
+  );
+
   sl.registerLazySingleton(
     () => AskQuestionUseCase(
       retrievalService: sl<RetrievalService>(),
-      promptBuilder: sl<ChatPromptBuilder>(),
-      gemmaManager: sl<GemmaManager>(),
+      answerStrategy: sl<AnswerStrategy>(),
       safetyPolicy: sl<AiSafetyPolicy>(),
+      directAnswer: sl<AnswerAffordabilityUseCase>().call,
     ),
   );
 
@@ -587,11 +1009,18 @@ Future<void> initDependencyInjection() async {
     () => ChatBloc(
       askQuestion: sl<AskQuestionUseCase>(),
       embedPendingChunks: sl<EmbedPendingChunksUseCase>(),
+      buildChart: BuildAnswerChartUseCase(
+        expenseRepository: sl<ExpenseRepository>(),
+        budgetInsights: sl<GetBudgetInsightsUseCase>(),
+        categoryNames: _categoryNamesForCharts,
+      ),
     ),
   );
 
   // Notifications DIs
-  final notificationsBox = Hive.box<AppNotificationModel>('notifications_box');
+  final notificationsBox = Hive.box<AppNotificationModel>(
+    HiveBoxes.notifications,
+  );
   sl.registerLazySingleton<Box<AppNotificationModel>>(() => notificationsBox);
 
   sl.registerLazySingleton<NotificationLocalDataSource>(
@@ -660,7 +1089,7 @@ Future<void> initDependencyInjection() async {
   );
 
   sl.registerLazySingleton<Box<dynamic>>(
-    () => Hive.box<dynamic>('notification_state_box'),
+    () => Hive.box<dynamic>(HiveBoxes.notificationState),
   );
 
   sl.registerLazySingleton<NotificationSettingsLocalDataSource>(
@@ -689,7 +1118,25 @@ Future<void> initDependencyInjection() async {
       budgetRepository: sl<BudgetRepository>(),
       stateBox: sl<Box<dynamic>>(),
       settingsRepository: sl<NotificationSettingsRepository>(),
+      rolloverRepository: sl<BudgetRolloverRepository>(),
+      budgetFilter: sl<BudgetExpenseFilter>(),
+      envelopes: sl<EnvelopeAdjustments>(),
       evaluator: sl<BudgetAlertEvaluator>(),
+    ),
+  );
+
+  sl.registerLazySingleton(
+    () => GenerateWeeklyDigestUseCase(
+      expenseRepository: sl<ExpenseRepository>(),
+      budgetRepository: sl<BudgetRepository>(),
+      recurringRepository: sl<RecurringExpenseRepository>(),
+      writer: GemmaDigestWriter(
+        gemma: sl<GemmaManager>(),
+        device: sl<DeviceCapability>(),
+      ),
+      cache: HiveDigestCache(Hive.box<dynamic>(HiveBoxes.settings)),
+      rolloverRepository: sl<BudgetRolloverRepository>(),
+      budgetFilter: sl<BudgetExpenseFilter>(),
     ),
   );
 
@@ -698,6 +1145,67 @@ Future<void> initDependencyInjection() async {
       notifications: sl<LocalNotificationService>(),
       expenseRepository: sl<ExpenseRepository>(),
       settingsRepository: sl<NotificationSettingsRepository>(),
+      recurringRepository: sl<RecurringExpenseRepository>(),
+      weeklyDigest: sl<GenerateWeeklyDigestUseCase>(),
     ),
   );
+
+  sl.registerLazySingleton(
+    () => CaptureNotificationService(
+      notifications: sl<LocalNotificationService>(),
+      settingsRepository: sl<NotificationSettingsRepository>(),
+    ),
+  );
+
+  // Voice expense entry
+  sl.registerLazySingleton<SpeechRecognizer>(() => SpeechToTextRecognizer());
+  sl.registerLazySingleton(
+    () => ParseVoiceExpenseUseCase(
+      expenseRepository: sl<ExpenseRepository>(),
+      refiner: GemmaVoiceExpenseRefiner(
+        gemma: sl<GemmaManager>(),
+        device: sl<DeviceCapability>(),
+      ),
+    ),
+  );
+  sl.registerFactoryParam<VoiceEntryCubit, String, List<String>>(
+    (localeId, categoryIds) => VoiceEntryCubit(
+      recognizer: sl<SpeechRecognizer>(),
+      parse: sl<ParseVoiceExpenseUseCase>(),
+      categoryIds: categoryIds,
+      localeId: localeId,
+    ),
+  );
+
+  sl.registerLazySingleton(
+    () => WeeklyDigestService(
+      generate: sl<GenerateWeeklyDigestUseCase>(),
+      scheduler: sl<NotificationScheduler>(),
+      saveNotification: sl<SaveNotificationUseCase>(),
+      stateBox: sl<Box<dynamic>>(),
+    ),
+  );
+}
+
+/// Defers to [CaptureNotificationService] at call time so registration order
+/// between the SMS and notification sections doesn't matter.
+class _LazyCaptureNotifier implements CaptureNotifier {
+  @override
+  Future<void> notify(List<CapturedTransaction> captures) =>
+      sl<CaptureNotificationService>().notify(captures);
+}
+
+/// Category id → every name a user might type for it, in all app languages.
+Map<String, List<String>> _categoryNamesForCharts() {
+  final locales = [
+    for (final code in ['en', 'hi', 'mr']) lookupAppLocalizations(Locale(code)),
+  ];
+  return {
+    for (final c in ExpenseCategories.all)
+      c.id: {
+        c.id,
+        c.label,
+        for (final l10n in locales) c.labelOf(l10n),
+      }.toList(),
+  };
 }

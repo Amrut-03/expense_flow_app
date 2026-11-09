@@ -18,10 +18,13 @@ import '../../../expense/domain/entities/expense_entity.dart';
 import '../../../expense/presentation/bloc/expense_bloc.dart';
 import '../../../expense/presentation/bloc/expense_state.dart';
 import '../../domain/entities/budget_entity.dart';
+import '../../domain/entities/budget_rollover.dart';
 import '../../domain/usecases/get_suggested_slider_max_usecase.dart';
 import '../bloc/budget_limits_bloc.dart';
 import '../bloc/budget_limits_event.dart';
 import '../bloc/budget_limits_state.dart';
+import '../bloc/budget_rollover_cubit.dart';
+import '../widgets/budget_rollover_sheet.dart';
 
 /// Lets the user set (or edit) a monthly budget limit per category.
 /// Each card has a numeric field and a slider kept in sync, plus a
@@ -41,7 +44,15 @@ class _BudgetEditScreenState extends State<BudgetEditScreen> {
   final Map<String, BudgetPeriod> _draftPeriods = {};
   Map<String, double> _originalLimits = {};
   Map<String, BudgetPeriod> _originalPeriods = {};
+  final Map<String, BudgetRolloverSetting> _draftRollover = {};
   bool _loading = false;
+
+  bool get _rolloverChanged {
+    final rollover = context.read<BudgetRolloverCubit>().state;
+    return _draftRollover.entries.any(
+      (e) => e.value != rollover.settingFor(e.key),
+    );
+  }
 
   bool get _hasChanges =>
       _draftLimits.entries.any(
@@ -49,7 +60,8 @@ class _BudgetEditScreenState extends State<BudgetEditScreen> {
       ) ||
       _draftPeriods.entries.any(
         (e) => e.value != (_originalPeriods[e.key] ?? BudgetPeriod.monthly),
-      );
+      ) ||
+      _rolloverChanged;
 
   @override
   void initState() {
@@ -100,8 +112,22 @@ class _BudgetEditScreenState extends State<BudgetEditScreen> {
     setState(() => _draftPeriods[categoryId] = period);
   }
 
+  Future<void> _pickRollover(String categoryId) async {
+    final rollover = context.read<BudgetRolloverCubit>().state;
+    final picked = await BudgetRolloverSheet.show(
+      context,
+      current: _draftRollover[categoryId] ?? rollover.settingFor(categoryId),
+      goals: rollover.goals,
+    );
+    if (picked != null && mounted) {
+      setState(() => _draftRollover[categoryId] = picked);
+    }
+  }
+
   Future<void> _save() async {
     setState(() => _loading = true);
+    await context.read<BudgetRolloverCubit>().apply(_draftRollover);
+    if (!mounted) return;
     final bloc = context.read<BudgetLimitsBloc>();
     final done = bloc.stream.firstWhere(
       (s) => s is BudgetLimitsLoaded || s is BudgetLimitsError,
@@ -237,7 +263,24 @@ class _BudgetEditScreenState extends State<BudgetEditScreen> {
                                 GetSuggestedSliderMaxUseCase.defaultMax)
                             .clamp(limit, double.infinity);
 
+                    final rolloverState = context
+                        .watch<BudgetRolloverCubit>()
+                        .state;
+                    final period =
+                        _draftPeriods[category.id] ?? BudgetPeriod.monthly;
+                    final showRollover =
+                        limit > 0 && period != BudgetPeriod.noLimit;
+
                     return _CategoryBudgetCard(
+                          rolloverLabel: showRollover
+                              ? rolloverLabel(
+                                  l10n,
+                                  _draftRollover[category.id] ??
+                                      rolloverState.settingFor(category.id),
+                                  rolloverState.goals,
+                                )
+                              : null,
+                          onRolloverTap: () => _pickRollover(category.id),
                           palette: palette,
                           category: category,
                           currencySymbol: symbol,
@@ -302,7 +345,13 @@ class _CategoryBudgetCard extends StatelessWidget {
     required this.onFieldChanged,
     required this.onSliderChanged,
     required this.onPeriodChanged,
+    this.rolloverLabel,
+    this.onRolloverTap,
   });
+
+  /// Current rollover choice; `null` hides the row (no limit set).
+  final String? rolloverLabel;
+  final VoidCallback? onRolloverTap;
 
   final dynamic palette;
   final ExpenseCategory category;
@@ -440,6 +489,50 @@ class _CategoryBudgetCard extends StatelessWidget {
               onChanged: onSliderChanged,
             ),
           ),
+          if (rolloverLabel != null) ...[
+            SizedBox(height: 8.h),
+            InkWell(
+              onTap: onRolloverTap,
+              borderRadius: BorderRadius.circular(8.r),
+              child: Padding(
+                padding: EdgeInsets.symmetric(vertical: 4.h),
+                child: Row(
+                  children: [
+                    Icon(
+                      Icons.autorenew,
+                      size: 16.sp,
+                      color: palette.textDark.withValues(alpha: .6),
+                    ),
+                    SizedBox(width: 6.w),
+                    Text(
+                      l10n.rollover_rowLabel,
+                      style: AppTextStyles.manrope(
+                        fontSize: 12.sp,
+                        color: palette.textDark.withValues(alpha: .6),
+                      ),
+                    ),
+                    const Spacer(),
+                    Flexible(
+                      child: Text(
+                        rolloverLabel!,
+                        overflow: TextOverflow.ellipsis,
+                        style: AppTextStyles.manrope(
+                          fontSize: 12.sp,
+                          fontWeight: FontWeight.w600,
+                          color: palette.accent,
+                        ),
+                      ),
+                    ),
+                    Icon(
+                      Icons.chevron_right,
+                      size: 16.sp,
+                      color: palette.textDark.withValues(alpha: .4),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ],
         ],
       ),
     );

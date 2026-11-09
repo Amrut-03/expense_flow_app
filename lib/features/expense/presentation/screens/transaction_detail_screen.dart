@@ -21,6 +21,9 @@ import '../bloc/expense_state.dart';
 import '../widgets/detail_row.dart';
 import '../widgets/pillow_button.dart';
 
+import '../../../events/presentation/cubit/spending_events_cubit.dart';
+import '../../../tax/domain/entities/tax_section.dart';
+
 class TransactionDetailScreen extends StatelessWidget {
   final ExpenseEntity expense;
 
@@ -221,12 +224,79 @@ class TransactionDetailScreen extends StatelessWidget {
                             height: 1,
                           ),
                         ],
+                        if (expense.merchant != null) ...[
+                          DetailRow(
+                            palette: palette,
+                            icon: Icons.storefront_outlined,
+                            label: l10n.detail_merchant,
+                            value: expense.merchant!,
+                          ),
+                          Divider(
+                            color: palette.textMuted.withValues(alpha: .2),
+                            height: 1,
+                          ),
+                        ],
+                        if (TaxSection.fromCode(expense.taxTag)
+                            case final tax?) ...[
+                          DetailRow(
+                            palette: palette,
+                            icon: Icons.receipt_long_outlined,
+                            label: l10n.detail_taxTag,
+                            value: '${tax.emoji} ${tax.code}',
+                          ),
+                          Divider(
+                            color: palette.textMuted.withValues(alpha: .2),
+                            height: 1,
+                          ),
+                        ],
+                        if (context
+                                .read<SpendingEventsCubit>()
+                                .all
+                                .where((e) => e.id == expense.eventId)
+                                .firstOrNull
+                            case final event?) ...[
+                          DetailRow(
+                            palette: palette,
+                            icon: Icons.celebration_outlined,
+                            label: l10n.events_partOf,
+                            value: '${event.emoji} ${event.name}',
+                          ),
+                          Divider(
+                            color: palette.textMuted.withValues(alpha: .2),
+                            height: 1,
+                          ),
+                        ],
+                        if (expense.recurringId != null) ...[
+                          DetailRow(
+                            palette: palette,
+                            icon: Icons.repeat,
+                            label: l10n.detail_recurring,
+                            value: '✓',
+                          ),
+                          Divider(
+                            color: palette.textMuted.withValues(alpha: .2),
+                            height: 1,
+                          ),
+                        ],
                         DetailRow(
                           palette: palette,
                           icon: Icons.currency_exchange,
                           label: l10n.detail_currency,
                           value: expense.currency,
                         ),
+                        if (expense.isForeignCurrency) ...[
+                          Divider(
+                            color: palette.textMuted.withValues(alpha: .2),
+                            height: 1,
+                          ),
+                          DetailRow(
+                            palette: palette,
+                            icon: Icons.receipt_long_outlined,
+                            label: l10n.detail_paidAmount,
+                            value:
+                                '${expense.paidAmount.toStringAsFixed(2)} ${expense.currency}',
+                          ),
+                        ],
                       ],
                     ),
                   )

@@ -108,6 +108,18 @@ class CurrencyCubit extends Cubit<CurrencyState> {
     );
   }
 
+  /// INR per 1 unit of [currencyCode], or `null` when live rates are not
+  /// available (so callers never record a made-up 1:1 rate).
+  double? rateToInr(String currencyCode) {
+    if (currencyCode == 'INR') return 1;
+
+    final fromRate = state.rates[currencyCode];
+    final inrRate = state.rates['INR'];
+    if (fromRate == null || inrRate == null || fromRate <= 0) return null;
+
+    return inrRate / fromRate;
+  }
+
   double convertToInr({required double amount, required String fromCurrency}) {
     final converter = _converter;
 

@@ -2,7 +2,9 @@ import 'dart:async';
 
 import 'package:expense_flow_app/core/logging/app_log_buffer.dart';
 import 'package:expense_flow_app/features/ai/domain/entities/chat_turn.dart';
+import 'package:expense_flow_app/features/ai/domain/entities/answer_chart.dart';
 import 'package:expense_flow_app/features/ai/domain/usecases/ask_question_usecase.dart';
+import 'package:expense_flow_app/features/ai/domain/usecases/build_answer_chart_usecase.dart';
 import 'package:expense_flow_app/features/ai/domain/usecases/embed_pending_chunks_usecase.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'chat_event.dart';
@@ -13,6 +15,7 @@ class ChatBloc extends Bloc<ChatEvent, ChatState> {
   ChatBloc({
     required this.askQuestion,
     EmbedPendingChunksUseCase? embedPendingChunks,
+    this.buildChart,
   }) : super(const ChatInitial()) {
     _embedPendingChunks = embedPendingChunks;
     _warmUpEmbeddingIndex();
@@ -21,6 +24,9 @@ class ChatBloc extends Bloc<ChatEvent, ChatState> {
   }
 
   final AskQuestionUseCase askQuestion;
+
+  /// Attaches a data chart to answers about trends / breakdowns / budgets.
+  final BuildAnswerChartUseCase? buildChart;
   EmbedPendingChunksUseCase? _embedPendingChunks;
 
   bool _warmUpStarted = false;
@@ -122,7 +128,13 @@ class ChatBloc extends Bloc<ChatEvent, ChatState> {
           ),
         );
       } else {
-        _conversation.add(ChatMessage(text: answer, isUser: false));
+        _conversation.add(
+          ChatMessage(
+            text: answer,
+            isUser: false,
+            chart: await _chartFor(question),
+          ),
+        );
       }
       emit(
         ChatAnswer(
@@ -140,6 +152,18 @@ class ChatBloc extends Bloc<ChatEvent, ChatState> {
           message: message,
         ),
       );
+    }
+  }
+
+  /// Never fails the answer: a chart is a bonus.
+  Future<AnswerChart?> _chartFor(String question) async {
+    final build = buildChart;
+    if (build == null) return null;
+    try {
+      return await build(question);
+    } catch (e, st) {
+      AppLogBuffer.instance.captureError('chat.chart', e, st);
+      return null;
     }
   }
 

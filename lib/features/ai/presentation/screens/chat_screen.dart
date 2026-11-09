@@ -1,3 +1,5 @@
+import '../../domain/entities/answer_chart.dart';
+import '../widgets/answer_chart_view.dart';
 import 'package:expense_flow_app/core/theme/app_text_styles.dart';
 import 'package:expense_flow_app/core/theme/app_colors.dart';
 import 'package:expense_flow_app/core/theme/neumorphic_styles.dart';
@@ -128,7 +130,8 @@ class _ChatScreenState extends State<ChatScreen> {
 
   List<_Message> _buildItems(ChatState state) {
     final items = <_Message>[
-      for (final m in state.messages) _Message(text: m.text, isUser: m.isUser),
+      for (final m in state.messages)
+        _Message(text: m.text, isUser: m.isUser, chart: m.chart),
     ];
 
     if (state is ChatLoading) {
@@ -465,12 +468,14 @@ class _Message {
   final bool isUser;
   final bool isTyping;
   final bool isError;
+  final AnswerChart? chart;
 
   const _Message({
     required this.text,
     required this.isUser,
     this.isTyping = false,
     this.isError = false,
+    this.chart,
   });
 
   factory _Message.typing() =>
@@ -524,6 +529,7 @@ class _MessageBubble extends StatelessWidget {
                     ),
                   ),
           ),
+          if (message.chart != null) AnswerChartView(chart: message.chart!),
           if (isError)
             GestureDetector(
               onTap: () => _retry(context),

@@ -1,16 +1,21 @@
 import 'package:equatable/equatable.dart';
 
+import '../../domain/entities/answer_chart.dart';
+
 /// A single chat message in the conversation.
 class ChatMessage extends Equatable {
   final String text;
   final bool isUser;
 
-  const ChatMessage({required this.text, required this.isUser});
+  /// Chart computed from the user's data, shown under an answer.
+  final AnswerChart? chart;
+
+  const ChatMessage({required this.text, required this.isUser, this.chart});
 
   static const ChatMessage typing = ChatMessage(text: '', isUser: false);
 
   @override
-  List<Object?> get props => [text, isUser];
+  List<Object?> get props => [text, isUser, chart];
 }
 
 sealed class ChatState extends Equatable {

@@ -10,6 +10,7 @@ import '../../domain/usecases/delete_expense_usecase.dart';
 import '../../domain/usecases/get_expense_usecase.dart';
 import '../../domain/usecases/regenerate_ai_chunks_usecase.dart';
 import '../../domain/usecases/update_expense_usecase.dart';
+import '../../../recurring/domain/usecases/start_recurring_expense_usecase.dart';
 import '../../../sync/domain/usecases/pull_remote_changes_usecase.dart';
 import '../../../sync/domain/usecases/push_pending_changes_usecase.dart';
 import '../../../sync/domain/usecases/watch_remote_expenses_usecase.dart';
@@ -18,6 +19,7 @@ import 'expense_state.dart';
 
 class ExpenseBloc extends Bloc<ExpenseEvent, ExpenseState> {
   final AddExpenseUseCase addExpenseUseCase;
+  final StartRecurringExpenseUseCase startRecurringExpenseUseCase;
   final GetExpensesUseCase getExpensesUseCase;
   final UpdateExpenseUseCase updateExpenseUseCase;
   final DeleteExpenseUseCase deleteExpenseUseCase;
@@ -30,6 +32,7 @@ class ExpenseBloc extends Bloc<ExpenseEvent, ExpenseState> {
 
   ExpenseBloc({
     required this.addExpenseUseCase,
+    required this.startRecurringExpenseUseCase,
     required this.getExpensesUseCase,
     required this.updateExpenseUseCase,
     required this.deleteExpenseUseCase,
@@ -65,17 +68,28 @@ class ExpenseBloc extends Bloc<ExpenseEvent, ExpenseState> {
     try {
       emit(const ExpenseLoading());
 
-      final added = await addExpenseUseCase(
-        AddExpenseParams(
-          amount: event.amount,
-          currency: event.currency,
-          categoryId: event.categoryId,
-          note: event.note,
-          title: event.title,
-          paymentMethod: event.paymentMethod,
-          date: event.date,
-        ),
+      final params = AddExpenseParams(
+        amount: event.amount,
+        currency: event.currency,
+        categoryId: event.categoryId,
+        note: event.note,
+        title: event.title,
+        merchant: event.merchant,
+        originalAmount: event.originalAmount,
+        exchangeRate: event.exchangeRate,
+        paymentMethod: event.paymentMethod,
+        taxTag: event.taxTag,
+        eventId: event.eventId,
+        date: event.date,
       );
+
+      final frequency = event.repeat;
+      final added = frequency == null
+          ? await addExpenseUseCase(params)
+          : await startRecurringExpenseUseCase(
+              firstExpense: params,
+              frequency: frequency,
+            );
 
       final syncFailure = await _pushPending();
 
@@ -181,11 +195,7 @@ class ExpenseBloc extends Bloc<ExpenseEvent, ExpenseState> {
     try {
       await regenerateAiChunksUseCase(expenseId);
     } catch (e, st) {
-      AppLogBuffer.instance.captureError(
-        'expense.refreshAiChunks',
-        e,
-        st,
-      );
+      AppLogBuffer.instance.captureError('expense.refreshAiChunks', e, st);
     }
 
     unawaited(_embedPending());

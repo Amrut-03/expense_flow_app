@@ -1,3 +1,13 @@
+import 'package:expense_flow_app/features/insights/presentation/cubit/wrapped_cubit.dart';
+import 'package:expense_flow_app/features/insights/presentation/screens/wrapped_screen.dart';
+import 'package:expense_flow_app/features/budget/presentation/bloc/envelope_cubit.dart';
+import 'package:expense_flow_app/features/budget/presentation/screens/envelopes_screen.dart';
+import 'package:expense_flow_app/features/events/presentation/screens/events_screen.dart';
+import 'package:expense_flow_app/features/groups/presentation/cubit/group_detail_cubit.dart';
+import 'package:expense_flow_app/features/groups/presentation/cubit/groups_cubit.dart';
+import 'package:expense_flow_app/features/groups/presentation/screens/group_detail_screen.dart';
+import 'package:expense_flow_app/features/groups/presentation/screens/groups_screen.dart';
+import 'package:expense_flow_app/core/notifications/notification_scheduler.dart';
 import 'package:expense_flow_app/features/auth/presentation/screens/forgot_password_screen.dart';
 import 'package:expense_flow_app/features/auth/presentation/screens/sign_in_screen.dart';
 import 'package:expense_flow_app/features/auth/presentation/screens/signup_screen.dart';
@@ -24,12 +34,30 @@ import '../../features/budget/presentation/screens/edit_budget_screen.dart';
 import '../../features/budget/presentation/screens/empty_budget_screen.dart';
 import '../../features/dashboard/presentation/widgets/bottom_nav_bar.dart';
 import '../../features/expense/presentation/screens/add_expense_screen.dart';
+import '../../features/categories/presentation/screens/manage_categories_screen.dart';
+import '../../features/goals/presentation/cubit/savings_goals_cubit.dart';
+import '../../features/goals/presentation/screens/savings_goals_screen.dart';
+import '../../features/recurring/presentation/cubit/recurring_expenses_cubit.dart';
+import '../../features/sms_capture/presentation/screens/captured_transactions_screen.dart';
+import '../../features/subscriptions/presentation/cubit/subscriptions_cubit.dart';
+import '../../features/subscriptions/presentation/screens/subscriptions_screen.dart';
+import '../../features/tax/presentation/cubit/tax_summary_cubit.dart';
+import '../../features/budget/presentation/bloc/budget_rollover_cubit.dart';
+import '../../features/tax/presentation/screens/tax_summary_screen.dart';
+import '../../features/reports/domain/usecases/export_usecases.dart';
+import '../../features/reports/presentation/cubit/reports_cubit.dart';
+import '../../features/reports/presentation/screens/reports_screen.dart';
+import '../../features/reports/presentation/share_report.dart';
+import '../../features/recurring/presentation/screens/recurring_expenses_screen.dart';
 
 class AppRouter {
   static final GlobalKey<NavigatorState> _rootNavigatorKey =
       GlobalKey<NavigatorState>();
   static final RouteObserver<PageRoute> routeObserver =
       RouteObserver<PageRoute>();
+
+  /// Context below the app's bloc providers, once the first frame is up.
+  static BuildContext? get rootContext => _rootNavigatorKey.currentContext;
 
   static final router = GoRouter(
     observers: [routeObserver],
@@ -74,8 +102,12 @@ class AppRouter {
       ),
       GoRoute(
         path: '/budget/edit',
-        pageBuilder: (context, state) =>
-            AppRouter._page(const BudgetEditScreen()),
+        pageBuilder: (context, state) => AppRouter._page(
+          BlocProvider(
+            create: (_) => sl<BudgetRolloverCubit>()..load(),
+            child: const BudgetEditScreen(),
+          ),
+        ),
       ),
       GoRoute(
         path: '/transaction-detail',
@@ -118,11 +150,130 @@ class AppRouter {
         ),
       ),
       GoRoute(
+        path: '/recurring',
+        pageBuilder: (context, state) => AppRouter._page(
+          BlocProvider(
+            create: (_) => sl<RecurringExpensesCubit>()..load(),
+            child: const RecurringExpensesScreen(),
+          ),
+        ),
+      ),
+      GoRoute(
+        path: '/categories',
+        pageBuilder: (context, state) =>
+            AppRouter._page(const ManageCategoriesScreen()),
+      ),
+      GoRoute(
+        path: '/subscriptions',
+        pageBuilder: (context, state) => AppRouter._page(
+          BlocProvider(
+            create: (_) => sl<SubscriptionsCubit>()..load(),
+            child: const SubscriptionsScreen(),
+          ),
+        ),
+      ),
+      GoRoute(
+        path: '/envelopes',
+        pageBuilder: (context, state) => AppRouter._page(
+          BlocProvider(
+            create: (_) => sl<EnvelopeCubit>()..load(),
+            child: const EnvelopesScreen(),
+          ),
+        ),
+      ),
+      GoRoute(
+        path: '/wrapped',
+        pageBuilder: (context, state) => AppRouter._page(
+          BlocProvider(
+            create: (_) => WrappedCubit(sl())..load(),
+            child: const WrappedScreen(),
+          ),
+        ),
+      ),
+      GoRoute(
+        path: '/groups',
+        pageBuilder: (context, state) => AppRouter._page(
+          BlocProvider(
+            create: (_) => sl<GroupsCubit>()..watch(),
+            child: GroupsScreen(
+              openGroup: (context, id) => context.push('/groups/$id'),
+            ),
+          ),
+        ),
+      ),
+      GoRoute(
+        path: '/groups/:id',
+        pageBuilder: (context, state) => AppRouter._page(
+          BlocProvider(
+            create: (_) =>
+                sl<GroupDetailCubit>(param1: state.pathParameters['id']!)
+                  ..watch(),
+            child: const GroupDetailScreen(),
+          ),
+        ),
+      ),
+      GoRoute(
+        path: '/events',
+        pageBuilder: (context, state) => AppRouter._page(const EventsScreen()),
+      ),
+      GoRoute(
+        path: '/goals',
+        pageBuilder: (context, state) => AppRouter._page(
+          BlocProvider(
+            create: (_) => sl<SavingsGoalsCubit>()..load(),
+            child: const SavingsGoalsScreen(),
+          ),
+        ),
+      ),
+      GoRoute(
+        path: '/tax-summary',
+        pageBuilder: (context, state) => AppRouter._page(
+          BlocProvider(
+            create: (_) => sl<TaxSummaryCubit>()..load(),
+            child: TaxSummaryScreen(
+              onExport: (context, summary) async {
+                ExportResult result;
+                try {
+                  result = ExportReady(
+                    await sl<ExportTaxSummaryCsvUseCase>()(summary),
+                  );
+                } catch (_) {
+                  result = const ExportFailed();
+                }
+                if (context.mounted) {
+                  await shareExport(
+                    context,
+                    result,
+                    subject: summary.year.label,
+                  );
+                }
+              },
+            ),
+          ),
+        ),
+      ),
+      GoRoute(
+        path: '/reports',
+        pageBuilder: (context, state) => AppRouter._page(
+          BlocProvider(
+            create: (_) => sl<ReportsCubit>()..load(),
+            child: const ReportsScreen(),
+          ),
+        ),
+      ),
+      GoRoute(
+        path: '/captures',
+        pageBuilder: (context, state) =>
+            AppRouter._page(const CapturedTransactionsScreen()),
+      ),
+      GoRoute(
         path: '/notification-settings',
         pageBuilder: (context, state) => AppRouter._page(
           BlocProvider(
             create: (_) => sl<NotificationSettingsCubit>()..load(),
-            child: const NotificationSettingsScreen(),
+            child: NotificationSettingsScreen(
+              loggingTime: sl<NotificationScheduler>().loggingTime,
+            ),
           ),
         ),
       ),

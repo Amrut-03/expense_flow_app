@@ -60,6 +60,7 @@ class RegenerateAiChunksUseCase {
             amount: expense.amount,
             date: expense.date,
             note: expense.note,
+            taxSection: expense.taxTag,
           );
 
     final previousMonthSpent = _sum(
@@ -107,6 +108,10 @@ class RegenerateAiChunksUseCase {
   }
 
   String _merchant(ExpenseEntity expense) {
+    final merchant = expense.merchant?.trim();
+
+    if (merchant != null && merchant.isNotEmpty) return merchant;
+
     final title = expense.title?.trim();
 
     if (title != null && title.isNotEmpty) return title;

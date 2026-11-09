@@ -39,6 +39,7 @@ class TransactionSummaryRefresher implements SummaryChunkRefresher {
       amount: expense.amount,
       date: expense.date,
       note: expense.note,
+      taxSection: expense.taxTag,
     );
 
     return DesiredChunk(

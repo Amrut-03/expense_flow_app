@@ -6,10 +6,9 @@ import '../../entities/retrieved_chunk.dart';
 /// persisted chunks, ranked by descending relevance and capped at [topK].
 ///
 /// Implementations:
-///  * [FallbackRetrievalService] — the production wiring. Prefers semantic,
-///    embedding-based ranking ([VectorRetrievalService]) and automatically
-///    degrades to [LexicalRetrievalService] when the on-device embedding
-///    model is not available.
+///  * [HybridRetrievalService] — the production wiring. Fuses semantic
+///    ([VectorRetrievalService]) and keyword ([LexicalRetrievalService])
+///    rankings with reciprocal rank fusion.
 ///  * [VectorRetrievalService] — the semantic, embedding-based retriever.
 ///  * [LexicalRetrievalService] — keyword/recency ranking that does not
 ///    require a working embedding model.

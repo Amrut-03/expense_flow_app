@@ -19,7 +19,11 @@ class TransactionChunkGenerator
         ? ''
         : ' — ${input.note}';
 
+    final tax = input.taxSection == null
+        ? ''
+        : ' Tax deductible under section ${input.taxSection}.';
+
     return '$amount spent on ${input.merchant} '
-        '(${input.categoryName}) on $date.$note';
+        '(${input.categoryName}) on $date.$note$tax';
   }
 }

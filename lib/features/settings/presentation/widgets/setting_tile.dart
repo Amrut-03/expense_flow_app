@@ -11,12 +11,16 @@ class SettingsTile extends StatelessWidget {
   final Widget trailing;
   final VoidCallback? onTap;
 
+  /// Optional secondary line under [label].
+  final String? subtitle;
+
   const SettingsTile({
     super.key,
     required this.emoji,
     required this.label,
     required this.trailing,
     this.onTap,
+    this.subtitle,
   });
 
   @override
@@ -40,13 +44,28 @@ class SettingsTile extends StatelessWidget {
             ),
             SizedBox(width: 14.w),
             Expanded(
-              child: Text(
-                label,
-                style: AppTextStyles.manrope(
-                  fontSize: 14.sp,
-                  fontWeight: FontWeight.w600,
-                  color: palette.textDark,
-                ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    label,
+                    style: AppTextStyles.manrope(
+                      fontSize: 14.sp,
+                      fontWeight: FontWeight.w600,
+                      color: palette.textDark,
+                    ),
+                  ),
+                  if (subtitle != null) ...[
+                    SizedBox(height: 2.h),
+                    Text(
+                      subtitle!,
+                      style: AppTextStyles.manrope(
+                        fontSize: 11.sp,
+                        color: palette.textMuted,
+                      ),
+                    ),
+                  ],
+                ],
               ),
             ),
             trailing,

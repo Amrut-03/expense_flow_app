@@ -16,6 +16,7 @@ class SubscriptionChunkGenerator
     final amount = ChunkTextFormatter.currency(input.amount);
     final date = ChunkTextFormatter.date(input.nextBillingDate);
     final cycle = switch (input.billingCycle) {
+      'weekly' => 'week',
       'monthly' => 'month',
       'yearly' => 'year',
       final other => other,

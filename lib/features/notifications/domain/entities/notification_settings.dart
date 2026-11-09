@@ -8,12 +8,18 @@ class NotificationSettings extends Equatable {
   final bool dailyReminderEnabled;
   final bool weeklySummaryEnabled;
   final bool monthlySummaryEnabled;
+  final bool billRemindersEnabled;
+
+  /// "Logged ₹120 at Swiggy as Food — [OK] [Change]" after an SMS scan.
+  final bool captureAlertsEnabled;
 
   const NotificationSettings({
     this.budgetAlertsEnabled = true,
     this.dailyReminderEnabled = true,
     this.weeklySummaryEnabled = true,
     this.monthlySummaryEnabled = true,
+    this.billRemindersEnabled = true,
+    this.captureAlertsEnabled = true,
   });
 
   NotificationSettings copyWith({
@@ -21,6 +27,8 @@ class NotificationSettings extends Equatable {
     bool? dailyReminderEnabled,
     bool? weeklySummaryEnabled,
     bool? monthlySummaryEnabled,
+    bool? billRemindersEnabled,
+    bool? captureAlertsEnabled,
   }) {
     return NotificationSettings(
       budgetAlertsEnabled: budgetAlertsEnabled ?? this.budgetAlertsEnabled,
@@ -28,6 +36,8 @@ class NotificationSettings extends Equatable {
       weeklySummaryEnabled: weeklySummaryEnabled ?? this.weeklySummaryEnabled,
       monthlySummaryEnabled:
           monthlySummaryEnabled ?? this.monthlySummaryEnabled,
+      billRemindersEnabled: billRemindersEnabled ?? this.billRemindersEnabled,
+      captureAlertsEnabled: captureAlertsEnabled ?? this.captureAlertsEnabled,
     );
   }
 
@@ -37,5 +47,7 @@ class NotificationSettings extends Equatable {
     dailyReminderEnabled,
     weeklySummaryEnabled,
     monthlySummaryEnabled,
+    billRemindersEnabled,
+    captureAlertsEnabled,
   ];
 }

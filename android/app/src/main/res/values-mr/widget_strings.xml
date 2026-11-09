@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="widget_description">आज खर्च करता येईल अशी रक्कम, झटपट नोंदीसह</string>
+    <string name="widget_safe_title">आज खर्च करता येईल</string>
+    <string name="widget_spent_title">आजचा खर्च</string>
+    <string name="widget_spent_today">आजचा खर्च: %1$s</string>
+    <string name="widget_no_budget">सुरक्षित रक्कम पाहण्यासाठी बजेट तयार करा</string>
+    <string name="widget_open_app">ताजे करण्यासाठी ExpenseFlow उघडा</string>
+    <string name="widget_locked_title">ExpenseFlow लॉक आहे</string>
+    <string name="widget_add">खर्च जोडा</string>
+</resources>

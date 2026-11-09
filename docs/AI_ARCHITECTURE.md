@@ -441,8 +441,17 @@ onboarding. Shown only once ever.
 
 **Known costs / watch items:**
 
-- **Brute-force retrieval** — `scoreAll` is O(n · d) over all chunks
-  (d = 384). Fine for hundreds/thousands of chunks; degrade above ~10k chunks.
+- **Retrieval at scale (done, P3 3.10)** — `VectorIndex`
+  (`domain/services/retrieval/vector_index.dart`) replaces brute-force
+  `scoreAll` for large stores:
+  - vectors are int8-quantised (≈4× smaller than `double`, cache-friendly);
+  - ≤512 chunks: exact scan; ≥2,000 chunks: IVF with spherical k-means
+    (k = √n, 16–1024 lists), probing 15% of lists (min 4);
+  - the top 64 candidates are re-scored exactly in float, so ranking quality
+    matches brute force (recall@5 ≥ 0.95 in `vector_index_test.dart`).
+  `VectorIndexCache` keeps a per-chunk stamp; large rebuilds run in
+  `Isolate.run`, and until they finish the stale index is used plus exact
+  scores for the changed chunks.
 - **Cold-start cost** — first `generateEmbedding` triggers model load; on
   low-end devices this can take a second or two. Pre-warm at a good moment
   (e.g. after the disclaimer/splash).
@@ -450,8 +459,8 @@ onboarding. Shown only once ever.
   strategy (RAM gating → rule-based template answers) is planned.
 - **Hive reads** — `getAllChunks()` materialises the whole box per query;
   acceptable today, revisit with pagination or an in-memory index.
-- **Float precision** — vectors stored as `List<double>` in Hive; consider
-  quantized `Float32List`/`Uint8` for large stores.
+- **Float precision** — vectors are still stored as `List<double>` in Hive;
+  quantisation happens in memory when the index is built.
 
 ---
 
@@ -467,8 +476,6 @@ onboarding. Shown only once ever.
   `GemmaAnswerStrategy` and a `TemplateAnswerStrategy`; a `DeviceCapability`
   (via `device_info_plus`, threshold ~3 GB) auto-selects the strategy.
   `device_info_plus` is already a dependency.
-- **Vector index** — replace brute-force with an HNSW/IVF index or an
-  in-memory precomputed `Float32List` matrix for sub-ms retrieval at scale.
 - **Chunk-level embedding invalidation** — version chunks so edits mark only
   the affected vectors stale instead of blanket `clearEmbeddings`.
 - **Reranking** — after top-k, rerank with a cross-encoder or let Gemma pick

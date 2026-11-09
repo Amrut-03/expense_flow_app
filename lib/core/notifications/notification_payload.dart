@@ -14,6 +14,7 @@ class NotificationPayload {
     required this.message,
     this.emoji,
     this.categoryId,
+    this.refId,
   });
 
   final NotificationType type;
@@ -22,6 +23,10 @@ class NotificationPayload {
   final String? emoji;
   final String? categoryId;
 
+  /// Id of the record the notification is about (e.g. an SMS capture), used
+  /// by notification actions.
+  final String? refId;
+
   Map<String, String> toJson() {
     return {
       'type': type.fcmName,
@@ -29,6 +34,7 @@ class NotificationPayload {
       'message': message,
       'emoji': emoji ?? type.defaultEmoji,
       'categoryId': ?categoryId,
+      'refId': ?refId,
     };
   }
 
@@ -45,6 +51,7 @@ class NotificationPayload {
         message: data['message'] as String? ?? '',
         emoji: data['emoji'] as String?,
         categoryId: data['categoryId'] as String?,
+        refId: data['refId'] as String?,
       );
     } catch (e, st) {
       AppLogBuffer.instance.captureError('notifications.payloadDecode', e, st);

@@ -1,5 +1,6 @@
 import 'package:equatable/equatable.dart';
 
+import '../../../recurring/domain/entities/recurring_expense_entity.dart';
 import '../../domain/entities/expense_entity.dart';
 
 abstract class ExpenseEvent extends Equatable {
@@ -10,13 +11,30 @@ abstract class ExpenseEvent extends Equatable {
 }
 
 class AddExpenseEvent extends ExpenseEvent {
+  /// Amount in INR.
   final double amount;
   final String currency;
   final String categoryId;
   final String? note;
   final String? title;
+  final String? merchant;
+
+  /// Amount as entered, in [currency].
+  final double? originalAmount;
+
+  /// INR per 1 unit of [currency].
+  final double? exchangeRate;
   final String? paymentMethod;
   final DateTime date;
+
+  /// Tax section code, see `TaxSection`.
+  final String? taxTag;
+
+  /// Event or trip this expense belongs to.
+  final String? eventId;
+
+  /// When set, the expense also starts a recurring rule.
+  final RecurrenceFrequency? repeat;
 
   const AddExpenseEvent({
     required this.amount,
@@ -24,8 +42,14 @@ class AddExpenseEvent extends ExpenseEvent {
     required this.categoryId,
     this.note,
     this.title,
+    this.merchant,
+    this.originalAmount,
+    this.exchangeRate,
     this.paymentMethod,
     required this.date,
+    this.taxTag,
+    this.eventId,
+    this.repeat,
   });
 
   @override
@@ -35,8 +59,14 @@ class AddExpenseEvent extends ExpenseEvent {
     categoryId,
     note,
     title,
+    merchant,
+    originalAmount,
+    exchangeRate,
     paymentMethod,
     date,
+    taxTag,
+    eventId,
+    repeat,
   ];
 }
 

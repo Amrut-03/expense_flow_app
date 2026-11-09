@@ -81,8 +81,12 @@ class NeuTextField extends StatelessWidget {
         // localized counter (e.g. "42/280").
         buildCounter: maxLength == null
             ? null
-            : (context, {required int currentLength, required bool isFocused, int? maxLength}) =>
-                  const SizedBox.shrink(),
+            : (
+                context, {
+                required int currentLength,
+                required bool isFocused,
+                int? maxLength,
+              }) => const SizedBox.shrink(),
         style: AppTextStyles.manrope(fontSize: 13.sp, color: palette.textDark),
         decoration: InputDecoration(
           hintText: hint,

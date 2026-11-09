@@ -36,6 +36,12 @@ class NotificationSettingsCubit extends Cubit<NotificationSettingsState> {
   Future<void> setMonthlySummaryEnabled(bool enabled) =>
       _update((s) => s.copyWith(monthlySummaryEnabled: enabled));
 
+  Future<void> setBillRemindersEnabled(bool enabled) =>
+      _update((s) => s.copyWith(billRemindersEnabled: enabled));
+
+  Future<void> setCaptureAlertsEnabled(bool enabled) =>
+      _update((s) => s.copyWith(captureAlertsEnabled: enabled));
+
   Future<void> _update(
     NotificationSettings Function(NotificationSettings) transform,
   ) async {

@@ -58,7 +58,9 @@ class TfliteMiniLmEmbeddingModel implements EmbeddingModel {
   Future<List<double>> embed(EncodedSequence encodedText) async {
     final interpreter = _interpreter;
     if (interpreter == null) {
-      throw StateError('MiniLM model is not loaded. Call load() before embed().');
+      throw StateError(
+        'MiniLM model is not loaded. Call load() before embed().',
+      );
     }
 
     // The bundled graph (all-MiniLM-L6-v2) exposes two `[1, seqLen]` INT32
@@ -102,9 +104,7 @@ class TfliteMiniLmEmbeddingModel implements EmbeddingModel {
   ) {
     if (shape.length <= 2) {
       final row = output.length == 1 ? output[0] as List : output;
-      return _normalize(
-        row.map((e) => (e as num).toDouble()).toList(),
-      );
+      return _normalize(row.map((e) => (e as num).toDouble()).toList());
     }
 
     final seqLen = shape[1];

@@ -6,6 +6,11 @@ import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:go_router/go_router.dart';
 import '../../../../core/constants/expense_category.dart';
+import '../../../../core/theme/app_colors.dart';
+import '../../../currency/presentation/util/currency_formatter.dart';
+import '../../domain/services/budget_progress_calculator.dart';
+import '../bloc/budget_insights_cubit.dart';
+import 'package:intl/intl.dart';
 import '../../../../core/theme/neumorphic_styles.dart';
 import '../../../../core/theme/theme_cubit.dart';
 import '../../../../core/widgets/neu_app_bar.dart';
@@ -54,10 +59,10 @@ class BudgetScreenState extends State<BudgetScreen> {
     super.didChangeDependencies();
     final isTicking = TickerMode.valuesOf(context).enabled;
     if (isTicking && !_wasTickingLastCheck) {
-      final state = context.read<ExpenseBloc>().state;
-      if (state is ExpenseLoaded) {
-        final total = state.expenses.fold<double>(0, (s, e) => s + e.amount);
-        _playRevealAnimation(total);
+      if (context.read<ExpenseBloc>().state is ExpenseLoaded) {
+        _playRevealAnimation(
+          context.read<BudgetInsightsCubit>().state.spentThisMonth,
+        );
       }
     }
     _wasTickingLastCheck = isTicking;
@@ -135,23 +140,29 @@ class BudgetScreenState extends State<BudgetScreen> {
 
         return BlocBuilder<ExpenseBloc, ExpenseState>(
           builder: (context, state) {
-            double totalSpent = 0;
-            final categorySpent = <String, double>{};
+            final insights = context.watch<BudgetInsightsCubit>().state;
 
-            if (state is ExpenseLoaded) {
-              for (final expense in state.expenses) {
-                totalSpent += expense.amount;
-                categorySpent.update(
-                  expense.categoryId,
-                  (v) => v + expense.amount,
-                  ifAbsent: () => expense.amount,
-                );
-              }
-            }
+            // Headline and breakdown cover this calendar month. A budgeted
+            // category is measured over its own period (month, quarter or
+            // year) so its bar matches its limit.
+            final totalSpent = insights.spentThisMonth;
+            final categorySpent = <String, double>{
+              ...insights.spentThisMonthByCategory,
+              for (final b in insights.budgets) b.categoryId: b.spent,
+            };
 
-            final activeCategories = ExpenseCategories.all
-                .where((cat) => (categorySpent[cat.id] ?? 0) > 0)
-                .toList();
+            final activeCategories =
+                {
+                      for (final cat in ExpenseCategories.all) cat.id: cat,
+                      for (final b in insights.budgets)
+                        b.categoryId: ExpenseCategories.byId(b.categoryId),
+                    }.values
+                    .where(
+                      (cat) =>
+                          (categorySpent[cat.id] ?? 0) > 0 ||
+                          insights.budgetFor(cat.id) != null,
+                    )
+                    .toList();
 
             if (_displayedTotal == 0 && totalSpent > 0) {
               WidgetsBinding.instance.addPostFrameCallback((_) {
@@ -281,16 +292,34 @@ class BudgetScreenState extends State<BudgetScreen> {
                                     i++
                                   ) ...[
                                     CategoryStatTile(
+                                          subtitle: _paceLabel(
+                                            context,
+                                            insights.budgetFor(
+                                              activeCategories[i].id,
+                                            ),
+                                          ),
+                                          subtitleColor: _paceColor(
+                                            palette,
+                                            insights.budgetFor(
+                                              activeCategories[i].id,
+                                            ),
+                                          ),
                                           emoji: activeCategories[i].emoji,
                                           label: activeCategories[i].labelOf(
                                             l10n,
                                           ),
                                           spent: currencyCubit.convertFromInr(
                                             categorySpent[activeCategories[i]
-                                                .id]!,
+                                                    .id] ??
+                                                0,
                                           ),
                                           budget: currencyCubit.convertFromInr(
-                                            budgetLoaded
+                                            insights
+                                                    .budgetFor(
+                                                      activeCategories[i].id,
+                                                    )
+                                                    ?.limit ??
+                                                budgetLoaded
                                                     .limits[activeCategories[i]
                                                     .id] ??
                                                 totalSpent,
@@ -370,5 +399,37 @@ class BudgetScreenState extends State<BudgetScreen> {
         );
       },
     );
+  }
+
+  String? _paceLabel(BuildContext context, CategoryBudgetProgress? budget) {
+    if (budget == null) return null;
+    final l10n = AppLocalizations.of(context);
+    final currency = context.read<CurrencyCubit>();
+    String money(double inr) =>
+        CurrencyFormatter.format(cubit: currency, amountInInr: inr);
+
+    final pace = switch (budget.status) {
+      BudgetPaceStatus.exceeded => l10n.budget_paceExceeded(
+        money(budget.spent - budget.limit),
+      ),
+      BudgetPaceStatus.atRisk => l10n.budget_paceAtRisk(
+        DateFormat.MMMd(l10n.localeName).format(budget.projectedRunOutDate!),
+      ),
+      BudgetPaceStatus.onTrack => l10n.budget_paceOnTrack(
+        money(budget.dailyAllowance),
+        budget.daysLeft,
+      ),
+    };
+    if (budget.carriedOver <= 0) return pace;
+    return '$pace\n${l10n.rollover_includes(money(budget.carriedOver))}';
+  }
+
+  Color? _paceColor(NeuPalette palette, CategoryBudgetProgress? budget) {
+    return switch (budget?.status) {
+      BudgetPaceStatus.exceeded => palette.danger,
+      BudgetPaceStatus.atRisk => palette.accent,
+      BudgetPaceStatus.onTrack => palette.success,
+      null => null,
+    };
   }
 }

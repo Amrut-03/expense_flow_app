@@ -1,3 +1,4 @@
+import '../../../events/presentation/widgets/active_events_section.dart';
 import 'package:expense_flow_app/core/theme/app_text_styles.dart';
 import 'package:intl/intl.dart';
 import 'package:flutter/material.dart';
@@ -26,6 +27,11 @@ import '../../../expense/presentation/bloc/expense_event.dart';
 import '../../../expense/presentation/bloc/expense_state.dart';
 import '../../../notifications/presentation/bloc/notifications_cubit.dart';
 import '../../../notifications/presentation/bloc/notifications_state.dart';
+import '../../../budget/presentation/widgets/safe_to_spend_card.dart';
+import '../../../sms_capture/presentation/cubit/sms_capture_cubit.dart';
+import '../../../insights/domain/services/payment_method_breakdown.dart';
+import '../../../insights/presentation/widgets/payment_method_card.dart';
+import '../../../insights/presentation/widgets/spending_calendar_card.dart';
 import '../widgets/categories_tile.dart';
 import '../widgets/transaction_history.dart';
 import '../widgets/monthly_total_chart.dart';
@@ -86,7 +92,9 @@ class _DashboardScreenState extends State<DashboardScreen> {
     if (isTicking && !_wasTickingLastCheck) {
       final state = context.read<ExpenseBloc>().state;
       if (state is ExpenseLoaded) {
-        final total = state.expenses.fold<double>(0, (s, e) => s + e.amount);
+        final total = const ComputeDashboardSummaryUseCase()(
+          state.expenses,
+        ).thisMonthSpent;
         _playRevealAnimation(total);
       }
     }
@@ -124,7 +132,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
         final expenses = state.expenses;
 
         final summary = const ComputeDashboardSummaryUseCase()(expenses);
-        final totalSpent = summary.totalSpent;
+        final totalSpent = summary.thisMonthSpent;
         final sortedCategories = summary.sortedCategories;
         final vsLastMonthLabel = summary.vsLastMonthLabel;
 
@@ -254,6 +262,53 @@ class _DashboardScreenState extends State<DashboardScreen> {
                           SyncWarningBanner(message: state.syncWarning!),
                           SizedBox(height: 16.h),
                         ],
+                        BlocBuilder<SmsCaptureCubit, SmsCaptureState>(
+                          builder: (context, capture) {
+                            final count = capture.pending.length;
+                            if (count == 0) return const SizedBox.shrink();
+                            return Padding(
+                              padding: EdgeInsets.only(bottom: 16.h),
+                              child: GestureDetector(
+                                onTap: () => context.push('/captures'),
+                                child: Container(
+                                  width: double.infinity,
+                                  padding: EdgeInsets.all(14.r),
+                                  decoration: NeuBox.raised(
+                                    palette,
+                                    radius: 16.r,
+                                  ),
+                                  child: Row(
+                                    children: [
+                                      Text(
+                                        '📩',
+                                        style: TextStyle(fontSize: 20.sp),
+                                      ),
+                                      SizedBox(width: 12.w),
+                                      Expanded(
+                                        child: Text(
+                                          l10n.capture_banner(count),
+                                          style: AppTextStyles.manrope(
+                                            fontSize: 13.sp,
+                                            fontWeight: FontWeight.w600,
+                                            color: palette.textDark,
+                                          ),
+                                        ),
+                                      ),
+                                      Text(
+                                        l10n.capture_review,
+                                        style: AppTextStyles.manrope(
+                                          fontSize: 13.sp,
+                                          fontWeight: FontWeight.w600,
+                                          color: palette.accent,
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                              ),
+                            );
+                          },
+                        ),
                         Container(
                               width: double.infinity,
                               decoration: NeuBox.raised(palette, radius: 16.r),
@@ -322,6 +377,14 @@ class _DashboardScreenState extends State<DashboardScreen> {
                               end: 0,
                               curve: Curves.easeOutCubic,
                             ),
+                        SizedBox(height: 16.h),
+                        SafeToSpendCard(
+                          onSetBudget: () =>
+                              StatefulNavigationShell.of(context).goBranch(1),
+                        )
+                            .animate(delay: 60.ms)
+                            .fadeIn(duration: 300.ms, curve: Curves.easeOut),
+                        const ActiveEventsSection(),
                         SizedBox(height: 24.h),
                         Text(
                           l10n.dashboard_spendingBreakdown,
@@ -372,6 +435,35 @@ class _DashboardScreenState extends State<DashboardScreen> {
                               end: 0,
                               curve: Curves.easeOutCubic,
                             ),
+                        SizedBox(height: 24.h),
+                        Text(
+                          l10n.dashboard_paymentMethods,
+                          style: AppTextStyles.manrope(
+                            fontSize: 14.sp,
+                            color: palette.textDark,
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                        SizedBox(height: 12.h),
+                        PaymentMethodCard(
+                          breakdown: PaymentMethodBreakdown.compute(
+                            expenses,
+                            now: now,
+                          ),
+                        ).animate(delay: 240.ms).fadeIn(duration: 280.ms),
+                        SizedBox(height: 24.h),
+                        Text(
+                          l10n.dashboard_spendCalendar,
+                          style: AppTextStyles.manrope(
+                            fontSize: 14.sp,
+                            color: palette.textDark,
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                        SizedBox(height: 12.h),
+                        SpendingCalendarCard(
+                          expenses: expenses,
+                        ).animate(delay: 260.ms).fadeIn(duration: 280.ms),
                         SizedBox(height: 24.h),
                         Text(
                           l10n.dashboard_categories,

@@ -2,6 +2,12 @@
 <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
 <plist version="1.0">
 <dict>
+	<key>NSFaceIDUsageDescription</key>
+	<string>ExpenseFlow uses Face ID to keep your expenses private.</string>
+	<key>NSMicrophoneUsageDescription</key>
+	<string>ExpenseFlow uses the microphone so you can add expenses by voice.</string>
+	<key>NSSpeechRecognitionUsageDescription</key>
+	<string>ExpenseFlow turns what you say, like "chai 20 rupees", into an expense.</string>
 	<key>CADisableMinimumFrameDurationOnPhone</key>
 	<true/>
 	<key>CFBundleDevelopmentRegion</key>
@@ -66,5 +72,20 @@
 		<string>UIInterfaceOrientationLandscapeLeft</string>
 		<string>UIInterfaceOrientationLandscapeRight</string>
 	</array>
+	<key>CFBundleURLTypes</key>
+	<array>
+		<dict>
+			<key>CFBundleURLName</key>
+			<string>com.nextgen.expenseflowapp.widget</string>
+			<key>CFBundleURLSchemes</key>
+			<array>
+				<string>expenseflow</string>
+			</array>
+		</dict>
+	</array>
+	<key>NSCameraUsageDescription</key>
+	<string>ExpenseFlow uses the camera to scan receipts. The photo is read on your iPhone and never uploaded.</string>
+	<key>NSPhotoLibraryUsageDescription</key>
+	<string>ExpenseFlow reads a receipt photo you choose. It's processed on your iPhone and never uploaded.</string>
 </dict>
 </plist>

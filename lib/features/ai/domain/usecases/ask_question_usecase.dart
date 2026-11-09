@@ -1,5 +1,4 @@
-import '../services/chat/chat_prompt_builder.dart';
-import '../services/gemma/gemma_manager.dart';
+import '../services/answer/answer_strategy.dart';
 import '../services/retrieval/retrieval_service.dart';
 import '../services/safety/ai_safety_policy.dart';
 import '../entities/chat_turn.dart';
@@ -10,10 +9,13 @@ import '../entities/chat_turn.dart';
 ///
 /// 1. rejects unsafe questions via [AiSafetyPolicy] (emitting a canned
 ///    template response instead),
-/// 2. embeds the question and retrieves the most relevant chunks via
+/// 2. answers "Can I afford it?"-style questions directly from budgets
+///    via [directAnswer], when provided,
+/// 3. embeds the question and retrieves the most relevant chunks via
 ///    [RetrievalService],
-/// 3. builds a prompt from those chunks via [ChatPromptBuilder],
-/// 4. streams the Gemma response token by token via [GemmaManager].
+/// 4. produces the answer via [AnswerStrategy] — Gemma on capable devices,
+///    a retrieval-only "lite" answer on low-memory devices or when the model
+///    fails to start.
 ///
 /// The returned stream emits response tokens; the final answer is the
 /// concatenation of every emitted token. Errors raised at any stage surface
@@ -21,15 +23,18 @@ import '../entities/chat_turn.dart';
 class AskQuestionUseCase {
   AskQuestionUseCase({
     required this.retrievalService,
-    required this.promptBuilder,
-    required this.gemmaManager,
+    required this.answerStrategy,
     required this.safetyPolicy,
+    this.directAnswer,
   });
 
   final RetrievalService retrievalService;
-  final ChatPromptBuilder promptBuilder;
-  final GemmaManager gemmaManager;
+  final AnswerStrategy answerStrategy;
   final AiSafetyPolicy safetyPolicy;
+
+  /// Optional deterministic answerer tried before retrieval (e.g. "Can I
+  /// afford it?"). Returns `null` to let the RAG pipeline answer.
+  final Future<String?> Function(String question)? directAnswer;
 
   /// Streams the answer to [question], retrieving up to [topK] chunks with a
   /// minimum cosine similarity of [minScore].
@@ -52,23 +57,22 @@ class AskQuestionUseCase {
       return;
     }
 
+    final direct = await directAnswer?.call(question);
+    if (direct != null) {
+      yield direct;
+      return;
+    }
+
     final chunks = await retrievalService.retrieve(
       query: question,
       topK: topK,
       minScore: minScore,
     );
-    final prompt = promptBuilder.build(
+
+    yield* answerStrategy.answer(
       question: question,
       chunks: chunks,
       history: history,
     );
-    final tokens = await gemmaManager.generateResponse(
-      prompt,
-      systemInstruction: promptBuilder.systemInstruction,
-    );
-
-    await for (final token in tokens) {
-      yield token;
-    }
   }
 }

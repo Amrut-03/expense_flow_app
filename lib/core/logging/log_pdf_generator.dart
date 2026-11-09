@@ -58,14 +58,14 @@ class LogPdfGenerator {
             ),
           ),
           pw.SizedBox(height: 4),
-          pw.Text(
-            'Generated: ${_stamp(DateTime.now())}',
-            style: _metaStyle,
-          ),
+          pw.Text('Generated: ${_stamp(DateTime.now())}', style: _metaStyle),
           pw.SizedBox(height: 2),
           pw.Text('Device: $device', style: _metaStyle),
           pw.SizedBox(height: 2),
-          pw.Text('App started: ${_stamp(buffer.startedAt)}', style: _metaStyle),
+          pw.Text(
+            'App started: ${_stamp(buffer.startedAt)}',
+            style: _metaStyle,
+          ),
           pw.SizedBox(height: 2),
           pw.Text(
             'Log entries: ${entries.length + logcatLines.length}',
@@ -136,10 +136,11 @@ class LogPdfGenerator {
     if (!Platform.isAndroid) return const [];
 
     try {
-      final result = await Process.run(
-        _logcatBinary,
-        const ['-d', '-v', 'brief'],
-      );
+      final result = await Process.run(_logcatBinary, const [
+        '-d',
+        '-v',
+        'brief',
+      ]);
       if (result.exitCode != 0) return const [];
 
       final out = result.stdout;

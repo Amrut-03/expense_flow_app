@@ -1,24 +1,52 @@
 import 'package:uuid/uuid.dart';
 
-import '../../../../core/constants/note_limits.dart';
 import '../entities/expense_entity.dart';
 import '../repositories/expense_repository.dart';
+import '../validation/expense_validator.dart';
 
 class AddExpenseParams {
+  /// Optional fixed id. Lets callers such as recurring-expense generation
+  /// write idempotently; a fresh UUID is used when omitted.
+  final String? id;
+
+  /// Amount in INR (the app's base currency).
   final double amount;
+
+  /// Currency the user paid in.
   final String currency;
   final String categoryId;
   final String? note;
   final String? title;
+  final String? merchant;
+
+  /// Amount exactly as entered, in [currency].
+  final double? originalAmount;
+
+  /// INR per 1 unit of [currency] at entry time.
+  final double? exchangeRate;
+  final String? recurringId;
+
+  /// Tax section code, see `TaxSection`.
+  final String? taxTag;
+
+  /// Event or trip this expense belongs to, see `SpendingEvent`.
+  final String? eventId;
   final String? paymentMethod;
   final DateTime date;
 
   const AddExpenseParams({
+    this.id,
     required this.amount,
     required this.currency,
     required this.categoryId,
     this.note,
     this.title,
+    this.merchant,
+    this.originalAmount,
+    this.exchangeRate,
+    this.recurringId,
+    this.taxTag,
+    this.eventId,
     this.paymentMethod,
     required this.date,
   });
@@ -26,21 +54,34 @@ class AddExpenseParams {
 
 class AddExpenseUseCase {
   final ExpenseRepository repository;
+  final DateTime Function() _now;
+  final String Function() _newId;
 
-  const AddExpenseUseCase(this.repository);
+  AddExpenseUseCase(
+    this.repository, {
+    DateTime Function()? now,
+    String Function()? newId,
+  }) : _now = now ?? DateTime.now,
+       _newId = newId ?? const Uuid().v4;
 
   Future<ExpenseEntity> call(AddExpenseParams params) async {
     _validate(params);
 
-    final now = DateTime.now();
+    final now = _now();
 
     final expense = ExpenseEntity(
-      id: const Uuid().v4(),
-      amount: params.amount, // already in INR
+      id: params.id ?? _newId(),
+      amount: params.amount,
       currency: params.currency,
       categoryId: params.categoryId,
-      note: params.note?.trim().isEmpty == true ? null : params.note?.trim(),
-      title: params.title?.trim().isEmpty == true ? null : params.title?.trim(),
+      note: ExpenseValidator.clean(params.note),
+      title: ExpenseValidator.clean(params.title),
+      merchant: ExpenseValidator.clean(params.merchant),
+      originalAmount: params.originalAmount,
+      exchangeRate: params.exchangeRate,
+      recurringId: params.recurringId,
+      taxTag: params.taxTag,
+      eventId: params.eventId,
       paymentMethod: params.paymentMethod,
       date: params.date,
       createdAt: now,
@@ -56,42 +97,20 @@ class AddExpenseUseCase {
   }
 
   void _validate(AddExpenseParams params) {
-    if (params.amount <= 0) {
-      throw Exception("Amount must be greater than 0");
-    }
-
-    final cents = (params.amount * 100).round();
-
-    if ((params.amount - cents / 100).abs() > 1e-6) {
-      throw Exception("Amount can have maximum 2 decimal places");
-    }
-
-    if (params.amount > 1000000) {
-      throw Exception("Amount exceeds allowed limit");
-    }
-
-    if (params.categoryId.trim().isEmpty) {
-      throw Exception("Category is required");
-    }
-
-    if ((params.note?.length ?? 0) > NoteLimits.maxLength) {
-      throw Exception(
-        'Note cannot exceed ${NoteLimits.maxLength} characters',
-      );
-    }
-
-    if ((params.title?.length ?? 0) > NoteLimits.titleMaxLength) {
-      throw Exception(
-        'Title cannot exceed ${NoteLimits.titleMaxLength} characters',
-      );
-    }
-
-    final oldestAllowed = DateTime.now().subtract(
-      const Duration(days: 365 * 10),
+    ExpenseValidator.validate(
+      amount: params.amount,
+      categoryId: params.categoryId,
+      note: params.note,
+      title: params.title,
+      merchant: params.merchant,
+      originalAmount: params.originalAmount,
+      exchangeRate: params.exchangeRate,
     );
 
+    final oldestAllowed = _now().subtract(const Duration(days: 365 * 10));
+
     if (params.date.isBefore(oldestAllowed)) {
-      throw Exception("Date is too old");
+      throw Exception('Date is too old');
     }
   }
 }

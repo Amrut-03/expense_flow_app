@@ -29,6 +29,16 @@ class RefreshSummariesUseCase {
     for (final refresher in refreshers) {
       final desired = await refresher.refresh();
 
+      if (refresher is PruningSummaryChunkRefresher) {
+        final keep = {for (final c in desired) c.id};
+        for (final chunk in existing.values) {
+          if (chunk.chunkType == refresher.ownedChunkType &&
+              !keep.contains(chunk.id)) {
+            await chunkRepository.deleteChunk(chunk.id);
+          }
+        }
+      }
+
       for (final chunk in desired) {
         final previous = existing[chunk.id];
 

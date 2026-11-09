@@ -24,6 +24,9 @@ class TransactionChunkInput extends Equatable {
   /// Optional user note attached to the transaction.
   final String? note;
 
+  /// Indian tax section the expense is tagged with (for example `80C`).
+  final String? taxSection;
+
   const TransactionChunkInput({
     required this.id,
     required this.merchant,
@@ -31,10 +34,19 @@ class TransactionChunkInput extends Equatable {
     required this.amount,
     required this.date,
     this.note,
+    this.taxSection,
   });
 
   @override
-  List<Object?> get props => [id, merchant, categoryName, amount, date, note];
+  List<Object?> get props => [
+    id,
+    merchant,
+    categoryName,
+    amount,
+    date,
+    note,
+    taxSection,
+  ];
 }
 
 /// Neutral input describing a monthly spending summary.

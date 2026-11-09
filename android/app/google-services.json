@@ -14,27 +14,11 @@
       },
       "oauth_client": [
         {
-          "client_id": "354658451800-bev4vjjrfr288so1cpmjrkfuurrh0hno.apps.googleusercontent.com",
+          "client_id": "354658451800-gel4bvmlmn2elo5nq7218okc33dt0kv5.apps.googleusercontent.com",
           "client_type": 1,
           "android_info": {
             "package_name": "com.nextgen.expenseflowapp",
-            "certificate_hash": "2d40a366ca31c3ba14f68cd30c3013b81a07b51e"
-          }
-        },
-        {
-          "client_id": "354658451800-bm3hdtg5sp8ai47ak52bgvniutmr8af8.apps.googleusercontent.com",
-          "client_type": 1,
-          "android_info": {
-            "package_name": "com.nextgen.expenseflowapp",
-            "certificate_hash": "9e9e5984437e21e16ad0f94e6b347f64407e8e6a"
-          }
-        },
-        {
-          "client_id": "354658451800-ceilg19craojalav2ku4m9b3iflch0bj.apps.googleusercontent.com",
-          "client_type": 1,
-          "android_info": {
-            "package_name": "com.nextgen.expenseflowapp",
-            "certificate_hash": "d29547e3548ef4badabf194fa5052bf4d6ad7bdf"
+            "certificate_hash": "cb5fb10f47d8fd9d3a99cbddf066ab467ea6a48e"
           }
         },
         {
@@ -43,14 +27,6 @@
           "android_info": {
             "package_name": "com.nextgen.expenseflowapp",
             "certificate_hash": "54c7a8f8d2d5ea570d8a14934eae0a85aac4f61d"
-          }
-        },
-        {
-          "client_id": "354658451800-socc6ufgursn5fhs49d25e31qi8pn3mf.apps.googleusercontent.com",
-          "client_type": 1,
-          "android_info": {
-            "package_name": "com.nextgen.expenseflowapp",
-            "certificate_hash": "b19ba44ac9e35209931c01d0a91c8e7d4422f0ea"
           }
         },
         {

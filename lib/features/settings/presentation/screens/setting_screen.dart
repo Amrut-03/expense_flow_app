@@ -18,6 +18,10 @@ import '../../../../core/widgets/neu_snack_bar.dart';
 import '../../../../core/widgets/neu_text_field.dart';
 import '../../../../core/widgets/tab_reveal.dart';
 import '../../../../l10n/app_localizations.dart';
+import '../../../app_lock/domain/repositories/app_lock_repository.dart';
+import '../../../sms_capture/domain/usecases/sms_capture_usecases.dart';
+import '../../../sms_capture/presentation/cubit/sms_capture_cubit.dart';
+import '../../../app_lock/presentation/cubit/app_lock_cubit.dart';
 import '../../../auth/domain/entities/user_entity.dart';
 import '../../../auth/presentation/bloc/auth_bloc.dart';
 import '../../../auth/presentation/bloc/auth_event.dart';
@@ -53,6 +57,89 @@ class _SettingScreenState extends State<SettingScreen> {
     _email = user.email?.trim() ?? '';
     final photo = user.photoUrl?.trim();
     _photoUrl = photo != null && photo.isNotEmpty ? photo : null;
+  }
+
+  /// Shows the prominent disclosure Google Play requires before the SMS
+  /// permission prompt, then enables or disables auto-detect.
+  Future<void> _toggleSmsCapture(bool enable) async {
+    final l10n = AppLocalizations.of(context);
+    final cubit = context.read<SmsCaptureCubit>();
+
+    if (enable) {
+      final palette = context.read<ThemeCubit>().state.palette;
+      final agreed = await showDialog<bool>(
+        context: context,
+        builder: (dialogContext) => AlertDialog(
+          backgroundColor: palette.background,
+          title: Text(
+            l10n.sms_disclosureTitle,
+            style: AppTextStyles.manrope(
+              color: palette.textDark,
+              fontWeight: FontWeight.w600,
+            ),
+          ),
+          content: Text(
+            l10n.sms_disclosureBody,
+            style: AppTextStyles.manrope(color: palette.textMuted),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(dialogContext).pop(false),
+              child: Text(
+                l10n.sms_disclosureDecline,
+                style: AppTextStyles.manrope(color: palette.textMuted),
+              ),
+            ),
+            TextButton(
+              onPressed: () => Navigator.of(dialogContext).pop(true),
+              child: Text(
+                l10n.sms_disclosureAccept,
+                style: AppTextStyles.manrope(
+                  color: palette.accent,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+            ),
+          ],
+        ),
+      );
+      if (agreed != true) return;
+    }
+
+    final result = await cubit.toggle(enable);
+    if (!mounted) return;
+    if (result == SmsCaptureToggleResult.permissionDenied) {
+      NeuSnackBar.show(
+        context: context,
+        message: l10n.sms_permissionDenied,
+        type: NeuSnackBarType.error,
+      );
+    }
+  }
+
+  Future<void> _toggleAppLock(bool enable) async {
+    final l10n = AppLocalizations.of(context);
+    final result = await context.read<AppLockCubit>().setEnabled(
+      enable,
+      reason: enable ? l10n.appLock_enableReason : l10n.appLock_disableReason,
+    );
+
+    if (!mounted) return;
+
+    final message = switch (result) {
+      AppLockAuthResult.success => null,
+      AppLockAuthResult.unavailable => l10n.appLock_unavailable,
+      AppLockAuthResult.lockedOut => l10n.appLock_lockedOut,
+      AppLockAuthResult.failed => l10n.appLock_failed,
+    };
+
+    if (message != null) {
+      NeuSnackBar.show(
+        context: context,
+        message: message,
+        type: NeuSnackBarType.error,
+      );
+    }
   }
 
   String get _avatarInitial => _displayName.substring(0, 1).toUpperCase();
@@ -186,6 +273,185 @@ class _SettingScreenState extends State<SettingScreen> {
                       .fadeIn(duration: 260.ms, curve: Curves.easeOut)
                       .slideY(begin: 0.06, end: 0, curve: Curves.easeOutCubic),
                   SizedBox(height: 12.h),
+                  SettingsTile(
+                        emoji: '🔐',
+                        label: l10n.settings_appLock,
+                        trailing: BlocBuilder<AppLockCubit, AppLockState>(
+                          builder: (context, lockState) {
+                            return Switch(
+                              value: lockState.enabled,
+                              activeThumbColor: palette.accent,
+                              onChanged: lockState.authenticating
+                                  ? null
+                                  : _toggleAppLock,
+                            );
+                          },
+                        ),
+                      )
+                      .animate(delay: 120.ms)
+                      .fadeIn(duration: 260.ms, curve: Curves.easeOut)
+                      .slideY(begin: 0.06, end: 0, curve: Curves.easeOutCubic),
+                  SizedBox(height: 12.h),
+                  SettingsTile(
+                        emoji: '🔁',
+                        label: l10n.settings_recurring,
+                        trailing: Icon(
+                          Icons.chevron_right,
+                          color: palette.textDark.withValues(alpha: .4),
+                          size: 20.sp,
+                        ),
+                        onTap: () => context.push('/recurring'),
+                      )
+                      .animate(delay: 140.ms)
+                      .fadeIn(duration: 260.ms, curve: Curves.easeOut)
+                      .slideY(begin: 0.06, end: 0, curve: Curves.easeOutCubic),
+                  SizedBox(height: 12.h),
+                  SettingsTile(
+                        emoji: '🎁',
+                        label: l10n.wrapped_settingsTile,
+                        trailing: Icon(
+                          Icons.chevron_right,
+                          color: palette.textDark.withValues(alpha: .4),
+                          size: 20.sp,
+                        ),
+                        onTap: () => context.push('/wrapped'),
+                      )
+                      .animate(delay: 140.ms)
+                      .fadeIn(duration: 260.ms, curve: Curves.easeOut)
+                      .slideY(begin: 0.06, end: 0, curve: Curves.easeOutCubic),
+                  SizedBox(height: 12.h),
+                  SettingsTile(
+                        emoji: '✉️',
+                        label: l10n.envelopes_settingsTile,
+                        trailing: Icon(
+                          Icons.chevron_right,
+                          color: palette.textDark.withValues(alpha: .4),
+                          size: 20.sp,
+                        ),
+                        onTap: () => context.push('/envelopes'),
+                      )
+                      .animate(delay: 141.ms)
+                      .fadeIn(duration: 260.ms, curve: Curves.easeOut)
+                      .slideY(begin: 0.06, end: 0, curve: Curves.easeOutCubic),
+                  SizedBox(height: 12.h),
+                  SettingsTile(
+                        emoji: '👥',
+                        label: l10n.groups_settingsTile,
+                        trailing: Icon(
+                          Icons.chevron_right,
+                          color: palette.textDark.withValues(alpha: .4),
+                          size: 20.sp,
+                        ),
+                        onTap: () => context.push('/groups'),
+                      )
+                      .animate(delay: 141.ms)
+                      .fadeIn(duration: 260.ms, curve: Curves.easeOut)
+                      .slideY(begin: 0.06, end: 0, curve: Curves.easeOutCubic),
+                  SizedBox(height: 12.h),
+                  SettingsTile(
+                        emoji: '🪔',
+                        label: l10n.events_settingsTile,
+                        trailing: Icon(
+                          Icons.chevron_right,
+                          color: palette.textDark.withValues(alpha: .4),
+                          size: 20.sp,
+                        ),
+                        onTap: () => context.push('/events'),
+                      )
+                      .animate(delay: 142.ms)
+                      .fadeIn(duration: 260.ms, curve: Curves.easeOut)
+                      .slideY(begin: 0.06, end: 0, curve: Curves.easeOutCubic),
+                  SizedBox(height: 12.h),
+                  SettingsTile(
+                        emoji: '🎯',
+                        label: l10n.settings_goals,
+                        trailing: Icon(
+                          Icons.chevron_right,
+                          color: palette.textDark.withValues(alpha: .4),
+                          size: 20.sp,
+                        ),
+                        onTap: () => context.push('/goals'),
+                      )
+                      .animate(delay: 145.ms)
+                      .fadeIn(duration: 260.ms, curve: Curves.easeOut)
+                      .slideY(begin: 0.06, end: 0, curve: Curves.easeOutCubic),
+                  SizedBox(height: 12.h),
+                  SettingsTile(
+                        emoji: '📺',
+                        label: l10n.settings_subscriptions,
+                        trailing: Icon(
+                          Icons.chevron_right,
+                          color: palette.textDark.withValues(alpha: .4),
+                          size: 20.sp,
+                        ),
+                        onTap: () => context.push('/subscriptions'),
+                      )
+                      .animate(delay: 150.ms)
+                      .fadeIn(duration: 260.ms, curve: Curves.easeOut)
+                      .slideY(begin: 0.06, end: 0, curve: Curves.easeOutCubic),
+                  SizedBox(height: 12.h),
+                  SettingsTile(
+                        emoji: '📄',
+                        label: l10n.settings_reports,
+                        trailing: Icon(
+                          Icons.chevron_right,
+                          color: palette.textDark.withValues(alpha: .4),
+                          size: 20.sp,
+                        ),
+                        onTap: () => context.push('/reports'),
+                      )
+                      .animate(delay: 151.ms)
+                      .fadeIn(duration: 260.ms, curve: Curves.easeOut)
+                      .slideY(begin: 0.06, end: 0, curve: Curves.easeOutCubic),
+                  SizedBox(height: 12.h),
+                  SettingsTile(
+                        emoji: '🧾',
+                        label: l10n.settings_taxSummary,
+                        trailing: Icon(
+                          Icons.chevron_right,
+                          color: palette.textDark.withValues(alpha: .4),
+                          size: 20.sp,
+                        ),
+                        onTap: () => context.push('/tax-summary'),
+                      )
+                      .animate(delay: 152.ms)
+                      .fadeIn(duration: 260.ms, curve: Curves.easeOut)
+                      .slideY(begin: 0.06, end: 0, curve: Curves.easeOutCubic),
+                  SizedBox(height: 12.h),
+                  SettingsTile(
+                        emoji: '🏷️',
+                        label: l10n.settings_categories,
+                        trailing: Icon(
+                          Icons.chevron_right,
+                          color: palette.textDark.withValues(alpha: .4),
+                          size: 20.sp,
+                        ),
+                        onTap: () => context.push('/categories'),
+                      )
+                      .animate(delay: 155.ms)
+                      .fadeIn(duration: 260.ms, curve: Curves.easeOut)
+                      .slideY(begin: 0.06, end: 0, curve: Curves.easeOutCubic),
+                  SizedBox(height: 12.h),
+                  BlocBuilder<SmsCaptureCubit, SmsCaptureState>(
+                    builder: (context, capture) {
+                      if (!capture.supported) return const SizedBox.shrink();
+                      return Padding(
+                        padding: EdgeInsets.only(bottom: 12.h),
+                        child: SettingsTile(
+                          emoji: '📩',
+                          label: l10n.settings_smsCapture,
+                          trailing: Switch(
+                            value: capture.enabled,
+                            activeThumbColor: palette.accent,
+                            onChanged: _toggleSmsCapture,
+                          ),
+                          onTap: capture.enabled
+                              ? () => context.push('/captures')
+                              : null,
+                        ),
+                      );
+                    },
+                  ),
                   SettingsTile(
                         emoji: '🔔',
                         label: l10n.settings_notifications,

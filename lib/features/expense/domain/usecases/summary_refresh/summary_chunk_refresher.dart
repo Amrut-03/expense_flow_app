@@ -31,3 +31,11 @@ abstract interface class SummaryChunkRefresher {
   /// Returns the full set of chunks this refresher wants persisted right now.
   Future<List<DesiredChunk>> refresh();
 }
+
+/// A refresher that owns every chunk of [ownedChunkType]: chunks of that
+/// type that it no longer returns (a deleted goal, a cancelled
+/// subscription) are removed so the AI never cites stale facts.
+abstract interface class PruningSummaryChunkRefresher
+    implements SummaryChunkRefresher {
+  String get ownedChunkType;
+}

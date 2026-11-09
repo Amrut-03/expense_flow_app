@@ -1,3 +1,5 @@
+import 'custom_category_registry.dart';
+
 /// Human-readable category labels shared across domain features.
 ///
 /// Kept framework-free so it can be used from domain layers (for example the
@@ -15,9 +17,11 @@ class CategoryLabels {
     'other': 'Other',
   };
 
-  /// Returns the display label for [categoryId], falling back to the raw id
-  /// when the category is unknown.
+  /// Returns the display label for [categoryId] (built-in or custom),
+  /// falling back to the raw id when the category is unknown.
   static String labelOf(String categoryId) {
-    return byId[categoryId] ?? categoryId;
+    return byId[categoryId] ??
+        CustomCategoryRegistry.byId(categoryId)?.label ??
+        categoryId;
   }
 }
